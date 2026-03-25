@@ -25,6 +25,8 @@ import ModuleDetail from './ModuleDetail';
 import ResumePage from './ResumePage';
 import WhiteboardPage from './WhiteboardPage';
 import CommunityPage from './CommunityPage';
+import ArenaPage from './ArenaPage';
+import BattlePage from './BattlePage';
 
 // --- Custom Hooks for Scroll Effects ---
 
@@ -1076,6 +1078,7 @@ const LandingApp = () => {
           onResumeClick={() => navigate('/resume')}
           onWhiteboardClick={() => navigate('/whiteboard')}
           onCommunityClick={() => navigate('/community')}
+          onArenaClick={() => navigate('/arena')}
           isDarkMode={isDarkMode} 
           setIsDarkMode={setIsDarkMode} 
         />
@@ -1083,6 +1086,8 @@ const LandingApp = () => {
       <Route path="/resume" element={<ResumePage isDarkMode={isDarkMode} />} />
       <Route path="/whiteboard" element={<WhiteboardPage isDarkMode={isDarkMode} />} />
       <Route path="/community" element={<CommunityPage isDarkMode={isDarkMode} />} />
+      <Route path="/arena" element={<ArenaPage isDarkMode={isDarkMode} />} />
+      <Route path="/battle/:battleId" element={<BattlePage isDarkMode={isDarkMode} />} />
       <Route path="/module/:moduleId" element={
         <ModuleDetail 
           onBack={() => navigate('/dashboard')} 

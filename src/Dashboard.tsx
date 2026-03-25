@@ -25,11 +25,12 @@ import {
   Moon
 } from 'lucide-react';
 
-const Dashboard = ({ onModuleClick, onResumeClick, onWhiteboardClick, onCommunityClick, isDarkMode, setIsDarkMode }: { 
+const Dashboard = ({ onModuleClick, onResumeClick, onWhiteboardClick, onCommunityClick, onArenaClick, isDarkMode, setIsDarkMode }: { 
   onModuleClick: (id: number) => void,
   onResumeClick: () => void,
   onWhiteboardClick: () => void,
   onCommunityClick: () => void,
+  onArenaClick: () => void,
   isDarkMode: boolean,
   setIsDarkMode: (val: boolean) => void
 }) => {
@@ -233,6 +234,7 @@ const Dashboard = ({ onModuleClick, onResumeClick, onWhiteboardClick, onCommunit
             onClick={() => {
               setIsMobileMenuOpen(false);
               if (item.label === "ML Whiteboard") onWhiteboardClick();
+              if (item.label === "The Arena") onArenaClick();
               if (item.label === "Resume Gen") onResumeClick();
               if (item.label === "Community") onCommunityClick();
             }}
@@ -476,7 +478,10 @@ const Dashboard = ({ onModuleClick, onResumeClick, onWhiteboardClick, onCommunit
                    ))}
                    <div className={`pl-4 text-[10px] text-center flex items-center ${isDarkMode ? 'text-zinc-500' : 'text-slate-500'}`}> +1.2k solved</div>
                  </div>
-                 <button className="px-6 py-2 border border-[#FF6B00] text-[#FF6B00] text-xs font-bold rounded-lg hover:bg-[#FF6B00] hover:text-white transition-all transform active:scale-95">
+                 <button 
+                  onClick={onArenaClick}
+                  className="px-6 py-2 border border-[#FF6B00] text-[#FF6B00] text-xs font-bold rounded-lg hover:bg-[#FF6B00] hover:text-white transition-all transform active:scale-95"
+                 >
                     ENTER ARENA
                  </button>
                </div>
