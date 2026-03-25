@@ -432,7 +432,7 @@ const Methodology = ({ isDarkMode }: { isDarkMode: boolean }) => {
           className={`grid grid-cols-1 md:grid-cols-3 gap-8 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
         >
           {items.map((item, idx) => (
-            <div key={idx} className="p-10 rounded-3xl bg-neutral-900/30 border border-white/5 hover:border-orange-500/30 transition-all duration-500 group relative overflow-hidden">
+            <div key={idx} className="p-10 rounded-3xl bg-neutral-900/30 border border-white/5 hover:border-[#FF6B00] transition-all duration-500 group relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 blur-3xl -z-10 group-hover:bg-orange-500/10 transition-colors" />
               <div className="w-16 h-16 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 mb-8 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
                 {item.icon}
@@ -914,18 +914,6 @@ const Pricing = ({ isDarkMode }: { isDarkMode: boolean }) => {
       ctaText: 'Join Discord'
     },
     {
-      id: 'pro',
-      name: 'Pro Engineer',
-      price: '₹1,000',
-      description: 'Foundational focus up to deep learning.',
-      features: ['Everything in Free', 'Access to Modules 1-5', 'Personalized Dashboards', 'Weekly tasks & Interview Tips', '2 Years Access'],
-      color: 'from-orange-600/20 to-neutral-900',
-      accent: 'text-orange-500',
-      glow: 'shadow-orange-500/20',
-      button: 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/40',
-      ctaText: 'Go Pro'
-    },
-    {
       id: 'max',
       name: 'AI Architect',
       price: '₹1,800',
@@ -937,6 +925,18 @@ const Pricing = ({ isDarkMode }: { isDarkMode: boolean }) => {
       button: 'bg-gradient-to-r from-red-600 to-orange-600 hover:brightness-110 text-white shadow-red-600/40',
       popular: true,
       ctaText: 'Join Max'
+    },
+    {
+      id: 'pro',
+      name: 'Pro Engineer',
+      price: '₹1,000',
+      description: 'Foundational focus up to deep learning.',
+      features: ['Everything in Free', 'Access to Modules 1-5', 'Personalized Dashboards', 'Weekly tasks & Interview Tips', '2 Years Access'],
+      color: 'from-orange-600/20 to-neutral-900',
+      accent: 'text-orange-500',
+      glow: 'shadow-orange-500/20',
+      button: 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/40',
+      ctaText: 'Go Pro'
     }
   ];
 

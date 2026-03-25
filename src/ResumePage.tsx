@@ -158,9 +158,6 @@ const ResumePage: React.FC<ResumePageProps> = ({ isDarkMode }) => {
 
         {/* ATS MATCH CHECKER SECTION */}
         <section className={`mb-12 border rounded-3xl overflow-hidden relative ${isDarkMode ? 'bg-[#0D0D0D] border-zinc-900' : 'bg-white border-slate-200 shadow-sm'}`}>
-          <div className={`absolute top-0 right-0 p-8 opacity-5 ${isDarkMode ? 'text-white' : 'text-black'}`}>
-            <Target size={160} />
-          </div>
           
           <div className={`p-8 border-b ${isDarkMode ? 'border-zinc-900' : 'border-slate-100'}`}>
              <h2 className="text-xl font-bold flex items-center gap-3">

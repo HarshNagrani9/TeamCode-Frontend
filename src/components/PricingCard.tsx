@@ -44,7 +44,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
 
   // Base card styles including conditional selection ring/glow
   const cardContainerClass = isLanding 
-    ? `group relative rounded-[2rem] p-[1px] transition-all duration-500 overflow-hidden flex flex-col ${tier.popular ? 'bg-gradient-to-b from-red-600 to-orange-500 scale-110 z-20 shadow-[0_0_80px_rgba(239,68,68,0.2)]' : (isDarkMode ? 'bg-white/10 hover:bg-white/20' : 'bg-slate-200 hover:bg-slate-300')}`
+    ? `group relative rounded-[2rem] p-[1px] transition-all duration-500 overflow-hidden flex flex-col ${tier.popular ? 'bg-gradient-to-b from-red-600 to-orange-500 z-20 shadow-[0_0_80px_rgba(239,68,68,0.2)]' : (isDarkMode ? 'bg-white/10 hover:bg-white/20' : 'bg-slate-200 hover:bg-slate-300')}`
     : `group relative cursor-pointer pt-12 rounded-[2.5rem] p-[1px] transition-all duration-700 ${isSelected ? `bg-gradient-to-b ${tier.color} scale-105 z-20 ${tier.glow} shadow-2xl` : (isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-100 hover:bg-slate-200')} scale-100 hover:scale-[1.02]`;
 
   const innerContainerClass = `${isDarkMode ? 'bg-neutral-950/90' : 'bg-white'} backdrop-blur-3xl p-8 lg:p-10 flex flex-col h-full rounded-[2rem] relative border ${isDarkMode ? 'border-white/5' : 'border-slate-200'} ${isLanding && !tier.popular ? (isDarkMode ? 'bg-neutral-900/90' : 'bg-slate-50') : ''}`;
