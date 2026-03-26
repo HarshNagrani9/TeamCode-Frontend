@@ -18,15 +18,15 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
-import AuthPage from './AuthPage';
-import EnrollPage from './EnrollPage';
-import Dashboard from './Dashboard';
-import ModuleDetail from './ModuleDetail';
-import ResumePage from './ResumePage';
-import WhiteboardPage from './WhiteboardPage';
-import CommunityPage from './CommunityPage';
-import ArenaPage from './ArenaPage';
-import BattlePage from './BattlePage';
+import AuthPage from '../pages/AuthPage';
+import EnrollPage from '../pages/EnrollPage';
+import Dashboard from '../pages/Dashboard';
+import ModuleDetail from '../modules/ModuleDetail';
+import ResumePage from '../pages/ResumePage';
+import WhiteboardPage from '../pages/WhiteboardPage';
+import CommunityPage from '../pages/CommunityPage';
+import ArenaPage from '../pages/ArenaPage';
+import BattlePage from '../pages/BattlePage';
 
 // --- Custom Hooks for Scroll Effects ---
 
@@ -880,7 +880,7 @@ const Curriculum = ({ isDarkMode }: { isDarkMode: boolean }) => {
   );
 };
 
-import PricingCard from './components/PricingCard';
+import PricingCard from '../components/PricingCard';
 
 const Pricing = ({ isDarkMode }: { isDarkMode: boolean }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -1090,7 +1090,6 @@ const LandingApp = () => {
       <Route path="/battle/:battleId" element={<BattlePage isDarkMode={isDarkMode} />} />
       <Route path="/module/:moduleId" element={
         <ModuleDetail 
-          onBack={() => navigate('/dashboard')} 
           isDarkMode={isDarkMode} 
         />
       } />

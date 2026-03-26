@@ -14,7 +14,7 @@ import {
   Network,
   Layers
 } from 'lucide-react';
-import PricingCard from './components/PricingCard';
+import PricingCard from '../components/PricingCard';
 
 interface EnrollPageProps {
   onBack: () => void;

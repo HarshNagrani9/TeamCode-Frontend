@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import Editor from '@monaco-editor/react';
 import { 
   Play, 
   CheckCircle2, 
@@ -13,22 +15,42 @@ import {
   PanelLeftClose,
   PanelLeftOpen
 } from 'lucide-react';
+import { getModuleData } from './moduleRegistry';
+import type { ModuleData } from './types';
 
 interface ModuleDetailProps {
-  onBack: () => void;
   isDarkMode: boolean;
 }
 
-const ModuleDetail: React.FC<ModuleDetailProps> = ({ onBack, isDarkMode }) => {
+const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
+  const navigate = useNavigate();
+  const { moduleId } = useParams<{ moduleId: string }>();
+
   const [activeChapter, setActiveChapter] = useState(0);
   const [activeSubModule, setActiveSubModule] = useState(0);
+  const [editorWidth, setEditorWidth] = useState(window.innerWidth * 0.45);
+  const [isResizing, setIsResizing] = useState(false);
   const [code, setCode] = useState('');
   const [output, setOutput] = useState<{ type: string; text: string }[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [isInterpreterLoading, setIsInterpreterLoading] = useState(true);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   
-  const pyodideRef = useRef<any>(null); // Still need any for pyodide as it's an external library without easy types here
+  const pyodideRef = useRef<any>(null);
+
+  // Load module data from registry
+  const [moduleData, setModuleData] = useState<ModuleData | null>(null);
+
+  useEffect(() => {
+    const id = Number(moduleId);
+    const data = getModuleData(id);
+    if (data) {
+      // Deep clone to avoid mutating the registry source
+      setModuleData(JSON.parse(JSON.stringify(data)));
+    }
+    setActiveChapter(0);
+    setActiveSubModule(0);
+  }, [moduleId]);
 
   // Load Pyodide (WASM Python Runtime)
   useEffect(() => {
@@ -51,108 +73,60 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ onBack, isDarkMode }) => {
     loadPyodide();
   }, []);
 
-  const [moduleData, setModuleData] = useState({
-    title: "Python for AI",
-    chapters: [
-      {
-        title: "Foundations of Python for ML",
-        subModules: [
-          { 
-            id: "ds_01",
-            title: "Efficient Data Structures", 
-            content: "In Machine Learning, we often handle massive datasets. Using standard Python lists can be slow. Here we explore why Tuples are used for tensor shapes (immutability) and how Dictionaries power model configurations.",
-            taskDescription: "Create a tuple named 'tensor_shape' with values (3, 224, 224) and print its length.",
-            initialCode: "# Task: Create 'tensor_shape' (tuple) with (3, 224, 224)\n# Then print its length.\n",
-            testScript: `
-import json
-try:
-    is_tuple = isinstance(tensor_shape, tuple)
-    correct_len = len(tensor_shape) == 3
-    print("__RESULT__" + json.dumps({"passed": is_tuple and correct_len}))
-except NameError:
-    print("__RESULT__" + json.dumps({"passed": False}))
-            `,
-            completed: false
-          },
-          { 
-            id: "lc_02",
-            title: "Advanced List Comprehensions", 
-            content: "List comprehensions are optimized at the C-level in Python. We use them to transform data labels and normalize small datasets on the fly.",
-            taskDescription: "Create a list 'normalized' that squares every number in [1, 2, 3, 4, 5] and print it.",
-            initialCode: "# Task: Square numbers 1-5 using a list comprehension.\n# Print the 'normalized' list.\n",
-            testScript: `
-import json
-try:
-    is_list = isinstance(normalized, list)
-    correct_vals = normalized == [1, 4, 9, 16, 25]
-    print("__RESULT__" + json.dumps({"passed": is_list and correct_vals}))
-except NameError:
-    print("__RESULT__" + json.dumps({"passed": False}))
-            `,
-            completed: false
-          },
-          { 
-            id: "mm_03",
-            title: "Memory Management & Dynamic Typing", 
-            content: "Understanding how Python handles object references is key to avoiding memory leaks in long-running training loops.",
-            taskDescription: "Create list x = [1]. Create y = x. Append 2 to x and print y to see reference behavior.",
-            initialCode: "# Task: Demonstrate object referencing.\n# Create x=[1], y=x, append 2 to x, print y.\n",
-            testScript: `
-import json
-try:
-    passed = 'y' in locals() and y == [1, 2] and x is y
-    print("__RESULT__" + json.dumps({"passed": passed}))
-except NameError:
-    print("__RESULT__" + json.dumps({"passed": False}))
-            `,
-            completed: false
-          }
-        ]
-      },
-      {
-        title: "Numerical Computing Foundations",
-        subModules: [
-          { 
-            id: "vec_01",
-            title: "Vectorization over Loops", 
-            content: "The 'For' loop is the enemy of performance. In this chapter, we discuss the mathematical 'Why' behind vectorization.",
-            taskDescription: "Print the string 'Vectorization is faster than loops' to initialize the engine.",
-            initialCode: "print('Vectorization is faster than loops')",
-            testScript: "import json; print('__RESULT__{\"passed\": true}')",
-            completed: false
-          },
-          { 
-            id: "brd_02",
-            title: "NumPy Array Broadcasting", 
-            content: "Broadcasting allows you to perform operations on arrays of different shapes.",
-            taskDescription: "Define two lists as a, b and print their element-wise sum using a list comprehension to simulate broadcasting.",
-            initialCode: "a = [1, 2]\nb = [10, 10]\n# print element-wise sum\n",
-            testScript: "import json; print('__RESULT__{\"passed\": True}')",
-            completed: false
-          },
-          { 
-            id: "slc_03",
-            title: "High-Performance Slicing", 
-            content: "Accessing specific dimensions of a 4D tensor requires precision.",
-            taskDescription: "Print a slice of range(10) from index 2 to 5.",
-            initialCode: "print(list(range(10))[2:5])",
-            testScript: "import json; print('__RESULT__{\"passed\": True}')",
-            completed: false
-          }
-        ]
-      }
-    ]
-  });
+  const startResizing = useCallback(() => setIsResizing(true), []);
+  const stopResizing = useCallback(() => setIsResizing(false), []);
 
-  const currentSub = moduleData.chapters[activeChapter].subModules[activeSubModule];
+  const resize = useCallback((e: MouseEvent) => {
+    if (isResizing) {
+      const newWidth = window.innerWidth - e.clientX;
+      if (newWidth > 320 && newWidth < (window.innerWidth - 440)) {
+        setEditorWidth(newWidth);
+      }
+    }
+  }, [isResizing]);
 
   useEffect(() => {
-    setCode(currentSub.initialCode);
-    setOutput([]);
-  }, [activeChapter, activeSubModule, currentSub.initialCode]);
+    if (isResizing) {
+      window.addEventListener('mousemove', resize);
+      window.addEventListener('mouseup', stopResizing);
+    }
+    return () => {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [isResizing, resize, stopResizing]);
+
+  const currentSub = moduleData?.chapters[activeChapter]?.subModules[activeSubModule];
+
+  // Update code when switching sub-modules
+  useEffect(() => {
+    if (currentSub) {
+      setCode(currentSub.initialCode);
+      setOutput([]);
+    }
+  }, [activeChapter, activeSubModule, currentSub?.initialCode]);
+
+  // Fallback if no module found
+  if (!moduleData) {
+    return (
+      <div className={`flex h-screen items-center justify-center font-sans ${isDarkMode ? 'bg-[#0A0A0A] text-zinc-100' : 'bg-gray-50 text-slate-900'}`}>
+        <div className="text-center space-y-6">
+          <Cpu size={64} className="mx-auto text-[#FF6B00] opacity-20" />
+          <h2 className="text-2xl font-bold">Module Not Found</h2>
+          <p className={`text-sm ${isDarkMode ? 'text-zinc-500' : 'text-slate-500'}`}>The requested module does not exist in the registry.</p>
+          <button 
+            onClick={() => navigate('/dashboard')} 
+            className="px-6 py-3 bg-[#FF6B00] text-black font-bold rounded-xl text-xs uppercase tracking-widest hover:shadow-[0_0_25px_rgba(255,107,0,0.4)] active:scale-95 transition-all"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const executeCode = async () => {
-    if (!pyodideRef.current || isExecuting) return;
+    if (!pyodideRef.current || isExecuting || !currentSub) return;
     
     setIsExecuting(true);
     const consoleOutput: { type: string; text: string }[] = [];
@@ -187,7 +161,7 @@ except NameError:
       if (passed) {
         const updated = { ...moduleData };
         updated.chapters[activeChapter].subModules[activeSubModule].completed = true;
-        setModuleData(updated);
+        setModuleData({ ...updated });
       }
 
     } catch (err: unknown) {
@@ -202,14 +176,11 @@ except NameError:
     }
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    setOutput(prev => [...prev, { type: 'system', text: "!! SECURITY: Neural-Link required. Manual input only (Paste disabled)." }]);
-  };
-
   const totalSubs = moduleData.chapters.reduce((acc, ch) => acc + ch.subModules.length, 0);
   const completedSubs = moduleData.chapters.reduce((acc, ch) => acc + ch.subModules.filter(s => s.completed).length, 0);
   const progressPercent = Math.round((completedSubs / totalSubs) * 100);
+
+  if (!currentSub) return null;
 
   return (
     <div className={`flex h-screen font-sans overflow-hidden transition-colors duration-500 ${isDarkMode ? 'bg-[#0A0A0A] text-zinc-100' : 'bg-gray-50 text-slate-900'}`}>
@@ -220,22 +191,22 @@ except NameError:
           isSidebarVisible ? 'w-80' : 'w-0 overflow-hidden opacity-0'
         } ${isDarkMode ? 'border-zinc-900 bg-[#0D0D0D]' : 'border-slate-200 bg-white'}`}
       >
-        <div className="p-6 border-b border-zinc-900 flex items-center justify-between min-w-[320px]">
+        <div className={`p-6 border-b flex items-center justify-between min-w-[320px] ${isDarkMode ? 'border-zinc-900' : 'border-slate-200'}`}>
           <div className="flex items-center gap-4">
             <button 
-              onClick={onBack}
-              className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-500 transition-colors"
+              onClick={() => navigate('/dashboard')}
+              className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-zinc-800 text-zinc-500' : 'hover:bg-slate-100 text-slate-400'}`}
             >
               <ArrowLeft size={18} />
             </button>
             <div>
-              <h2 className="text-sm font-bold text-[#FF6B00] uppercase tracking-tighter">Module 01</h2>
+              <h2 className="text-sm font-bold text-[#FF6B00] uppercase tracking-tighter">Module {String(moduleData.moduleNumber).padStart(2, '0')}</h2>
               <h1 className="text-lg font-bold truncate w-40">{moduleData.title}</h1>
             </div>
           </div>
           <button 
             onClick={() => setIsSidebarVisible(false)}
-            className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-500 hover:text-white transition-colors"
+            className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-zinc-800 text-zinc-500 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-900'}`}
             title="Collapse Sidebar"
           >
             <PanelLeftClose size={18} />
@@ -245,7 +216,7 @@ except NameError:
         <div className="flex-1 overflow-y-auto p-4 space-y-6 min-w-[320px]">
           {moduleData.chapters.map((chapter, cIdx) => (
             <div key={cIdx} className="space-y-2">
-              <h3 className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest px-2 mb-3">
+              <h3 className={`text-[10px] font-mono uppercase tracking-widest px-2 mb-3 ${isDarkMode ? 'text-zinc-500' : 'text-slate-400'}`}>
                 CH {cIdx + 1}: {chapter.title}
               </h3>
               {chapter.subModules.map((sub, sIdx) => {
@@ -255,14 +226,14 @@ except NameError:
                     key={sIdx}
                     onClick={() => { setActiveChapter(cIdx); setActiveSubModule(sIdx); }}
                     className={`w-full flex items-center justify-between p-3 rounded-xl transition-all group ${
-                      isActive ? 'bg-[#FF6B00]/10 border border-[#FF6B00]/30 text-white' : 'hover:bg-zinc-800/50 text-zinc-500'
+                      isActive ? 'bg-[#FF6B00]/10 border border-[#FF6B00]/30 text-white' : `${isDarkMode ? 'hover:bg-zinc-800/50 text-zinc-500' : 'hover:bg-slate-100 text-slate-500'}`
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       {sub.completed ? (
                         <CheckCircle2 size={16} className="text-[#FF6B00]" />
                       ) : (
-                        <Circle size={16} className={isActive ? 'text-[#FF6B00]' : 'text-zinc-700'} />
+                        <Circle size={16} className={isActive ? 'text-[#FF6B00]' : (isDarkMode ? 'text-zinc-700' : 'text-slate-300')} />
                       )}
                       <span className={`text-xs font-medium text-left ${isActive ? 'text-[#FF6B00]' : ''}`}>
                         {sub.title}
@@ -276,7 +247,7 @@ except NameError:
         </div>
 
         <div className={`p-4 border-t min-w-[320px] ${isDarkMode ? 'border-zinc-900 bg-[#0A0A0A]' : 'border-slate-200 bg-gray-50'}`}>
-          <div className="flex justify-between text-[10px] font-mono text-zinc-500 mb-2 uppercase tracking-tighter">
+          <div className={`flex justify-between text-[10px] font-mono mb-2 uppercase tracking-tighter ${isDarkMode ? 'text-zinc-500' : 'text-slate-400'}`}>
             <span>Sync Progress</span>
             <span>{progressPercent}%</span>
           </div>
@@ -299,7 +270,7 @@ except NameError:
                 <PanelLeftOpen size={20} />
               </button>
             )}
-            <div className="flex items-center gap-2 text-xs font-mono text-zinc-500 uppercase">
+            <div className={`flex items-center gap-2 text-xs font-mono uppercase ${isDarkMode ? 'text-zinc-500' : 'text-slate-400'}`}>
               <BookOpen size={16} />
               <span>Neural Documentation</span>
             </div>
@@ -309,7 +280,7 @@ except NameError:
         <div className="flex-1 overflow-y-auto p-10 space-y-8 max-w-3xl mx-auto w-full">
           <div className="space-y-4">
              <h1 className={`text-4xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{currentSub.title}</h1>
-             <div className="flex items-center gap-4 text-xs font-mono text-zinc-500">
+             <div className={`flex items-center gap-4 text-xs font-mono ${isDarkMode ? 'text-zinc-500' : 'text-slate-400'}`}>
                 <span className="bg-[#FF6B00]/10 px-2 py-1 rounded text-[#FF6B00] border border-[#FF6B00]/20 font-bold tracking-widest">WASM RUNTIME</span>
                 <span>STEP {activeChapter + 1}.{activeSubModule + 1}</span>
              </div>
@@ -343,8 +314,19 @@ except NameError:
         </div>
       </section>
 
+      {/* RESIZER HANDLE */}
+      <div 
+        onMouseDown={startResizing}
+        className={`w-1 cursor-col-resize flex-shrink-0 transition-all z-50 hover:bg-[#FF6B00]/40 group relative ${isResizing ? 'bg-[#FF6B00]' : 'bg-transparent'}`}
+      >
+        <div className={`absolute inset-y-0 -left-1 -right-1 cursor-col-resize`} />
+      </div>
+
       {/* REAL IDE (PYODIDE) */}
-      <section className={`w-[45%] flex flex-col ${isDarkMode ? 'bg-[#080808]' : 'bg-gray-100'}`}>
+      <section 
+        style={{ width: `${editorWidth}px` }}
+        className={`flex flex-col flex-shrink-0 ${isDarkMode ? 'bg-[#080808]' : 'bg-gray-100'}`}
+      >
         <header className={`h-16 border-b flex items-center justify-between px-6 ${isDarkMode ? 'border-zinc-900 bg-[#0D0D0D]' : 'border-slate-200 bg-white'}`}>
           <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-400 uppercase font-bold tracking-widest">
             {isInterpreterLoading ? (
@@ -371,17 +353,37 @@ except NameError:
             <div className={`h-10 border-b flex items-center px-4 justify-between ${isDarkMode ? 'bg-[#121212] border-zinc-900' : 'bg-gray-50 border-slate-200'}`}>
               <div className="flex items-center gap-2">
                 <Code2 size={14} className="text-[#FF6B00]" />
-                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-tighter">workspace/main.py</span>
+                <span className={`text-[10px] font-mono uppercase tracking-tighter ${isDarkMode ? 'text-zinc-500' : 'text-slate-400'}`}>workspace/main.py</span>
               </div>
             </div>
-            <textarea
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              onPaste={handlePaste}
-              spellCheck="false"
-              className={`flex-1 w-full bg-transparent p-6 font-mono text-sm resize-none focus:outline-none leading-relaxed selection:bg-[#FF6B00]/30 ${isDarkMode ? 'text-zinc-300' : 'text-slate-800'}`}
-              placeholder="# Begin coding..."
-            />
+            <div className="flex-1 w-full bg-transparent p-4 font-mono text-sm relative">
+              <Editor
+                height="100%"
+                language="python"
+                value={code}
+                theme={isDarkMode ? "vs-dark" : "light"}
+                onChange={(value) => setCode(value || '')}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                  padding: { top: 16 },
+                  scrollBeyondLastLine: false,
+                  smoothScrolling: true,
+                  cursorBlinking: "smooth",
+                  formatOnPaste: true,
+                  wordWrap: "on",
+                  lineNumbersMinChars: 3,
+                  overviewRulerLanes: 0,
+                  hideCursorInOverviewRuler: true,
+                  scrollbar: {
+                    vertical: 'hidden',
+                    horizontal: 'hidden'
+                  }
+                }}
+              />
+              {/* Optional Paste Overlay for security theater if desired */}
+            </div>
           </div>
 
           {/* REAL TERMINAL */}
