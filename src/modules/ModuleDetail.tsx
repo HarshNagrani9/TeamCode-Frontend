@@ -13,8 +13,11 @@ import {
   Loader2,
   Cpu,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
+import MarkdownContent from './components/MarkdownContent';
 import { getModuleData } from './moduleRegistry';
 import type { ModuleData } from './types';
 
@@ -28,6 +31,7 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
 
   const [activeChapter, setActiveChapter] = useState(0);
   const [activeSubModule, setActiveSubModule] = useState(0);
+  const [expandedChapters, setExpandedChapters] = useState<Set<number>>(new Set([0]));
   const [editorWidth, setEditorWidth] = useState(window.innerWidth * 0.45);
   const [isResizing, setIsResizing] = useState(false);
   const [code, setCode] = useState('');
@@ -79,7 +83,7 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
   const resize = useCallback((e: MouseEvent) => {
     if (isResizing) {
       const newWidth = window.innerWidth - e.clientX;
-      if (newWidth > 320 && newWidth < (window.innerWidth - 440)) {
+      if (newWidth > 250 && newWidth < (window.innerWidth - 300)) {
         setEditorWidth(newWidth);
       }
     }
@@ -139,7 +143,14 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
 
     try {
       await pyodideRef.current.runPythonAsync(code);
-      await pyodideRef.current.runPythonAsync(currentSub.testScript);
+      
+      // Only execute testScript if it exists and is not empty
+      if (currentSub.testScript && currentSub.testScript.trim()) {
+        await pyodideRef.current.runPythonAsync(currentSub.testScript);
+      } else {
+        // Auto-pass if no test script is provided
+        consoleOutput.push({ type: 'stdout', text: `__RESULT__${JSON.stringify({ passed: true })}` });
+      }
       
       const resultLine = consoleOutput.find(l => l.text.includes("__RESULT__"));
       let passed = false;
@@ -213,37 +224,58 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-6 min-w-[320px]">
-          {moduleData.chapters.map((chapter, cIdx) => (
-            <div key={cIdx} className="space-y-2">
-              <h3 className={`text-[10px] font-mono uppercase tracking-widest px-2 mb-3 ${isDarkMode ? 'text-zinc-500' : 'text-slate-400'}`}>
-                CH {cIdx + 1}: {chapter.title}
-              </h3>
-              {chapter.subModules.map((sub, sIdx) => {
-                const isActive = activeChapter === cIdx && activeSubModule === sIdx;
-                return (
-                  <button
-                    key={sIdx}
-                    onClick={() => { setActiveChapter(cIdx); setActiveSubModule(sIdx); }}
-                    className={`w-full flex items-center justify-between p-3 rounded-xl transition-all group ${
-                      isActive ? 'bg-[#FF6B00]/10 border border-[#FF6B00]/30 text-white' : `${isDarkMode ? 'hover:bg-zinc-800/50 text-zinc-500' : 'hover:bg-slate-100 text-slate-500'}`
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {sub.completed ? (
-                        <CheckCircle2 size={16} className="text-[#FF6B00]" />
-                      ) : (
-                        <Circle size={16} className={isActive ? 'text-[#FF6B00]' : (isDarkMode ? 'text-zinc-700' : 'text-slate-300')} />
-                      )}
-                      <span className={`text-xs font-medium text-left ${isActive ? 'text-[#FF6B00]' : ''}`}>
-                        {sub.title}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-w-[320px]">
+          {moduleData.chapters.map((chapter, cIdx) => {
+            const isExpanded = expandedChapters.has(cIdx);
+            return (
+              <div key={cIdx} className="space-y-1">
+                <button 
+                  onClick={() => {
+                    const next = new Set(expandedChapters);
+                    if (next.has(cIdx)) next.delete(cIdx);
+                    else next.add(cIdx);
+                    setExpandedChapters(next);
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+                    isDarkMode ? 'hover:bg-zinc-800/50' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  <h3 className={`text-[10px] font-mono uppercase tracking-widest ${isDarkMode ? 'text-zinc-500' : 'text-slate-400'}`}>
+                    CH {cIdx + 1}: {chapter.title}
+                  </h3>
+                  {isExpanded ? <ChevronUp size={12} className="text-zinc-600" /> : <ChevronDown size={12} className="text-zinc-600" />}
+                </button>
+                
+                {isExpanded && (
+                  <div className="space-y-1 mt-1">
+                    {chapter.subModules.map((sub, sIdx) => {
+                      const isActive = activeChapter === cIdx && activeSubModule === sIdx;
+                      return (
+                        <button
+                          key={sIdx}
+                          onClick={() => { setActiveChapter(cIdx); setActiveSubModule(sIdx); }}
+                          className={`w-full flex items-center justify-between p-3 rounded-xl transition-all group ${
+                            isActive ? 'bg-[#FF6B00]/10 border border-[#FF6B00]/30 text-white' : `${isDarkMode ? 'hover:bg-zinc-800/50 text-zinc-500' : 'hover:bg-slate-100 text-slate-500'}`
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            {sub.completed ? (
+                              <CheckCircle2 size={16} className="text-[#FF6B00]" />
+                            ) : (
+                              <Circle size={16} className={isActive ? 'text-[#FF6B00]' : (isDarkMode ? 'text-zinc-700' : 'text-slate-300')} />
+                            )}
+                            <span className={`text-xs font-medium text-left ${isActive ? 'text-[#FF6B00]' : ''}`}>
+                              {sub.title}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <div className={`p-4 border-t min-w-[320px] ${isDarkMode ? 'border-zinc-900 bg-[#0A0A0A]' : 'border-slate-200 bg-gray-50'}`}>
@@ -286,10 +318,10 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
              </div>
           </div>
 
-          <div className={`prose prose-invert max-w-none leading-relaxed space-y-6 ${isDarkMode ? 'text-zinc-400' : 'text-slate-600'}`}>
-            <p className={`text-lg antialiased font-light ${isDarkMode ? 'text-zinc-300' : 'text-slate-700'}`}>{currentSub.content}</p>
+          <div className="space-y-6">
+            <MarkdownContent content={currentSub.content} isDarkMode={isDarkMode} />
 
-            <div className="bg-[#FF6B00]/5 border-l-2 border-[#FF6B00] p-6 rounded-r-2xl">
+            <div className="bg-[#FF6B00]/5 border-l-2 border-[#FF6B00] p-6 rounded-r-2xl mt-10">
               <h4 className="text-[#FF6B00] text-xs font-bold flex items-center gap-2 mb-2 uppercase tracking-widest">
                 <Info size={14} /> 
                 The Task
@@ -325,21 +357,21 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
       {/* REAL IDE (PYODIDE) */}
       <section 
         style={{ width: `${editorWidth}px` }}
-        className={`flex flex-col flex-shrink-0 ${isDarkMode ? 'bg-[#080808]' : 'bg-gray-100'}`}
+        className={`flex flex-col flex-shrink-0 min-w-0 ${isDarkMode ? 'bg-[#080808]' : 'bg-gray-100'}`}
       >
-        <header className={`h-16 border-b flex items-center justify-between px-6 ${isDarkMode ? 'border-zinc-900 bg-[#0D0D0D]' : 'border-slate-200 bg-white'}`}>
-          <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-400 uppercase font-bold tracking-widest">
+        <header className={`h-16 border-b flex flex-shrink-0 items-center justify-between px-6 ${isDarkMode ? 'border-zinc-900 bg-[#0D0D0D]' : 'border-slate-200 bg-white'}`}>
+          <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-400 uppercase font-bold tracking-widest min-w-0 pr-4">
             {isInterpreterLoading ? (
-              <Loader2 size={12} className="animate-spin text-amber-500" />
+              <Loader2 size={12} className="animate-spin text-amber-500 flex-shrink-0" />
             ) : (
-              <Cpu size={12} className="text-emerald-500" />
+              <Cpu size={12} className="text-emerald-500 flex-shrink-0" />
             )}
-            <span>{isInterpreterLoading ? 'LOADING KERNEL...' : 'PY_KERNEL_3.10_ACTIVE'}</span>
+            <span className="truncate">{isInterpreterLoading ? 'LOADING KERNEL...' : 'PY_KERNEL_3.10_ACTIVE'}</span>
           </div>
           <button 
             onClick={executeCode}
             disabled={isExecuting || isInterpreterLoading}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg font-bold text-xs transition-all ${
+            className={`flex items-center gap-2 px-6 py-2 rounded-lg font-bold text-xs transition-all flex-shrink-0 whitespace-nowrap ${
               isExecuting || isInterpreterLoading ? 'bg-zinc-800 text-zinc-600 cursor-wait' : 'bg-[#FF6B00] text-black hover:shadow-[0_0_25px_rgba(255,107,0,0.6)] active:scale-95'
             }`}
           >
@@ -348,15 +380,15 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
           </button>
         </header>
 
-        <div className="flex-1 flex flex-col p-4 overflow-hidden relative">
-          <div className={`flex-1 rounded-xl border flex flex-col overflow-hidden shadow-2xl ${isDarkMode ? 'bg-[#0D0D0D] border-zinc-900' : 'bg-white border-slate-200'}`}>
-            <div className={`h-10 border-b flex items-center px-4 justify-between ${isDarkMode ? 'bg-[#121212] border-zinc-900' : 'bg-gray-50 border-slate-200'}`}>
-              <div className="flex items-center gap-2">
-                <Code2 size={14} className="text-[#FF6B00]" />
-                <span className={`text-[10px] font-mono uppercase tracking-tighter ${isDarkMode ? 'text-zinc-500' : 'text-slate-400'}`}>workspace/main.py</span>
+        <div className="flex-1 flex flex-col p-4 overflow-hidden relative min-w-0">
+          <div className={`flex-1 rounded-xl border flex flex-col overflow-hidden shadow-2xl min-w-0 ${isDarkMode ? 'bg-[#0D0D0D] border-zinc-900' : 'bg-white border-slate-200'}`}>
+            <div className={`h-10 flex-shrink-0 border-b flex items-center px-4 justify-between ${isDarkMode ? 'bg-[#121212] border-zinc-900' : 'bg-gray-50 border-slate-200'}`}>
+              <div className="flex items-center gap-2 min-w-0">
+                <Code2 size={14} className="text-[#FF6B00] flex-shrink-0" />
+                <span className={`text-[10px] font-mono uppercase tracking-tighter truncate ${isDarkMode ? 'text-zinc-500' : 'text-slate-400'}`}>workspace/main.py</span>
               </div>
             </div>
-            <div className="flex-1 w-full bg-transparent p-4 font-mono text-sm relative">
+            <div className="flex-1 w-full bg-transparent p-4 font-mono text-sm relative min-h-0 min-w-0">
               <Editor
                 height="100%"
                 language="python"
@@ -387,12 +419,12 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
           </div>
 
           {/* REAL TERMINAL */}
-          <div className={`h-60 mt-4 rounded-xl border flex flex-col overflow-hidden shadow-inner ${isDarkMode ? 'bg-black border-zinc-900' : 'bg-gray-900 border-slate-200'}`}>
-             <div className={`h-8 border-b flex items-center px-4 gap-2 ${isDarkMode ? 'bg-[#0D0D0D] border-zinc-900' : 'bg-black border-slate-700'}`}>
-                <TerminalIcon size={12} className="text-zinc-600" />
-                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">Real-time Console</span>
+          <div className={`h-60 mt-4 flex-shrink-0 rounded-xl border flex flex-col overflow-hidden shadow-inner ${isDarkMode ? 'bg-black border-zinc-900' : 'bg-gray-900 border-slate-200'}`}>
+             <div className={`h-8 flex-shrink-0 border-b flex items-center px-4 gap-2 ${isDarkMode ? 'bg-[#0D0D0D] border-zinc-900' : 'bg-black border-slate-700'}`}>
+                <TerminalIcon size={12} className="text-zinc-600 flex-shrink-0" />
+                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest truncate">Real-time Console</span>
              </div>
-             <div className={`flex-1 p-4 font-mono text-[12px] overflow-y-auto space-y-1 selection:bg-zinc-700 ${isDarkMode ? 'bg-[#050505]' : 'bg-black'}`}>
+             <div className={`flex-1 min-h-0 min-w-0 p-4 font-mono text-[12px] overflow-y-auto space-y-1 selection:bg-zinc-700 ${isDarkMode ? 'bg-[#050505]' : 'bg-black'}`}>
                 {output.length === 0 ? (
                   <span className="text-zinc-800 italic select-none">Kernel idle. Awaiting instruction.</span>
                 ) : (

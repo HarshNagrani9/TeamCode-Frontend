@@ -1,5 +1,5 @@
 import type { ModuleData } from './types';
-import module01 from './data/module01-python';
+import { module01 } from './data/module01-python';
 import module02 from './data/module02-preprocessing';
 import module03 from './data/module03-geometric-math';
 import module04 from './data/module04-classical-ml';

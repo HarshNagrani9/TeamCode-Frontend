@@ -16,6 +16,7 @@ export interface Chapter {
 }
 
 export interface ModuleData {
+  id: string;
   title: string;
   moduleNumber: number;
   chapters: Chapter[];
