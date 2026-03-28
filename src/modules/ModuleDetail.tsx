@@ -152,7 +152,7 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
                     isDarkMode ? 'hover:bg-zinc-800/50' : 'hover:bg-slate-100'
                   }`}
                 >
-                  <h3 className={`text-[10px] font-mono uppercase tracking-widest ${isDarkMode ? 'text-zinc-500' : 'text-slate-400'}`}>
+                  <h3 className={`text-[10px] font-mono uppercase tracking-widest ${isDarkMode ? 'text-zinc-400' : 'text-slate-500'}`}>
                     CH {cIdx + 1}: {chapter.title}
                   </h3>
                   {isExpanded ? <ChevronUp size={12} className="text-zinc-600" /> : <ChevronDown size={12} className="text-zinc-600" />}
@@ -167,14 +167,14 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
                           key={sIdx}
                           onClick={() => { setActiveChapter(cIdx); setActiveSubModule(sIdx); }}
                           className={`w-full flex items-center justify-between p-3 rounded-xl transition-all group ${
-                            isActive ? 'bg-[#FF6B00]/10 border border-[#FF6B00]/30 text-white' : `${isDarkMode ? 'hover:bg-zinc-800/50 text-zinc-500' : 'hover:bg-slate-100 text-slate-500'}`
+                            isActive ? 'bg-[#FF6B00]/10 border border-[#FF6B00]/30 text-white' : `${isDarkMode ? 'hover:bg-zinc-800/50 text-zinc-300' : 'hover:bg-slate-100 text-slate-700'}`
                           }`}
                         >
                           <div className="flex items-center gap-3">
                             {sub.completed ? (
                               <CheckCircle2 size={16} className="text-[#FF6B00]" />
                             ) : (
-                              <Circle size={16} className={isActive ? 'text-[#FF6B00]' : (isDarkMode ? 'text-zinc-700' : 'text-slate-300')} />
+                              <Circle size={16} className={isActive ? 'text-[#FF6B00]' : (isDarkMode ? 'text-zinc-500' : 'text-slate-400')} />
                             )}
                             <span className={`text-xs font-medium text-left ${isActive ? 'text-[#FF6B00]' : ''}`}>
                               {sub.title}
