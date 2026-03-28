@@ -27,6 +27,7 @@ import WhiteboardPage from '../pages/WhiteboardPage';
 import CommunityPage from '../pages/CommunityPage';
 import ArenaPage from '../pages/ArenaPage';
 import BattlePage from '../pages/BattlePage';
+import EditorPage from '../pages/EditorPage';
 
 // --- Custom Hooks for Scroll Effects ---
 
@@ -1093,6 +1094,7 @@ const LandingApp = () => {
           isDarkMode={isDarkMode} 
         />
       } />
+      <Route path="/editor" element={<EditorPage isDarkMode={isDarkMode} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

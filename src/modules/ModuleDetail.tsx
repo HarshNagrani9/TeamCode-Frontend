@@ -1,23 +1,18 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import Editor from '@monaco-editor/react';
-import { 
-  Play, 
-  CheckCircle2, 
-  Circle, 
-  BookOpen, 
-  Code2, 
-  Terminal as TerminalIcon, 
+import {
+  CheckCircle2,
+  Circle,
   ArrowLeft,
-  Info,
-  Loader2,
-  Cpu,
   PanelLeftClose,
   PanelLeftOpen,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  BookOpen,
+  ArrowRight,
 } from 'lucide-react';
-import MarkdownContent from './components/MarkdownContent';
+import W3ExampleCard from './components/W3ExampleCard';
+import { parseContentToCells } from './utils/parseContentToCells';
 import { getModuleData } from './moduleRegistry';
 import type { ModuleData } from './types';
 
@@ -32,15 +27,7 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
   const [activeChapter, setActiveChapter] = useState(0);
   const [activeSubModule, setActiveSubModule] = useState(0);
   const [expandedChapters, setExpandedChapters] = useState<Set<number>>(new Set([0]));
-  const [editorWidth, setEditorWidth] = useState(window.innerWidth * 0.45);
-  const [isResizing, setIsResizing] = useState(false);
-  const [code, setCode] = useState('');
-  const [output, setOutput] = useState<{ type: string; text: string }[]>([]);
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [isInterpreterLoading, setIsInterpreterLoading] = useState(true);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
-  
-  const pyodideRef = useRef<any>(null);
 
   // Load module data from registry
   const [moduleData, setModuleData] = useState<ModuleData | null>(null);
@@ -49,77 +36,56 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
     const id = Number(moduleId);
     const data = getModuleData(id);
     if (data) {
-      // Deep clone to avoid mutating the registry source
       setModuleData(JSON.parse(JSON.stringify(data)));
     }
     setActiveChapter(0);
     setActiveSubModule(0);
   }, [moduleId]);
 
-  // Load Pyodide (WASM Python Runtime)
-  useEffect(() => {
-    const loadPyodide = async () => {
-      try {
-        const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js";
-        script.onload = async () => {
-          // @ts-expect-error - Pyodide is loaded via script tag
-          const pyodide = await window.loadPyodide();
-          pyodideRef.current = pyodide;
-          setIsInterpreterLoading(false);
-          setOutput([{ type: 'system', text: "> Neural Kernel v3.10 initialized. Ready for execution." }]);
-        };
-        document.head.appendChild(script);
-      } catch {
-        setOutput([{ type: 'error', text: "Failed to load Python Runtime. Check your connection." }]);
-      }
-    };
-    loadPyodide();
-  }, []);
-
-  const startResizing = useCallback(() => setIsResizing(true), []);
-  const stopResizing = useCallback(() => setIsResizing(false), []);
-
-  const resize = useCallback((e: MouseEvent) => {
-    if (isResizing) {
-      const newWidth = window.innerWidth - e.clientX;
-      if (newWidth > 250 && newWidth < (window.innerWidth - 300)) {
-        setEditorWidth(newWidth);
-      }
-    }
-  }, [isResizing]);
-
-  useEffect(() => {
-    if (isResizing) {
-      window.addEventListener('mousemove', resize);
-      window.addEventListener('mouseup', stopResizing);
-    }
-    return () => {
-      window.removeEventListener('mousemove', resize);
-      window.removeEventListener('mouseup', stopResizing);
-    };
-  }, [isResizing, resize, stopResizing]);
-
   const currentSub = moduleData?.chapters[activeChapter]?.subModules[activeSubModule];
 
-  // Update code when switching sub-modules
-  useEffect(() => {
-    if (currentSub) {
-      setCode(currentSub.initialCode);
-      setOutput([]);
+  // Parse content into cells
+  const cells = currentSub ? parseContentToCells(currentSub.content) : [];
+
+  // Mark complete and advance to next sub-module
+  const handleMarkComplete = () => {
+    if (!moduleData) return;
+
+    const updated = { ...moduleData, chapters: [...moduleData.chapters] };
+    updated.chapters[activeChapter] = {
+      ...updated.chapters[activeChapter],
+      subModules: [...updated.chapters[activeChapter].subModules],
+    };
+    updated.chapters[activeChapter].subModules[activeSubModule] = {
+      ...updated.chapters[activeChapter].subModules[activeSubModule],
+      completed: true,
+    };
+    setModuleData(updated);
+
+    // Advance to next sub-module or next chapter
+    const currentChapter = updated.chapters[activeChapter];
+    if (activeSubModule < currentChapter.subModules.length - 1) {
+      setActiveSubModule(activeSubModule + 1);
+    } else if (activeChapter < updated.chapters.length - 1) {
+      setActiveChapter(activeChapter + 1);
+      setActiveSubModule(0);
+      setExpandedChapters(prev => new Set([...prev, activeChapter + 1]));
     }
-  }, [activeChapter, activeSubModule, currentSub?.initialCode]);
+
+    // Scroll to top
+    const scrollContainer = document.getElementById('module-scroll-container');
+    if (scrollContainer) scrollContainer.scrollTop = 0;
+  };
 
   // Fallback if no module found
   if (!moduleData) {
     return (
       <div className={`flex h-screen items-center justify-center font-sans ${isDarkMode ? 'bg-[#0A0A0A] text-zinc-100' : 'bg-gray-50 text-slate-900'}`}>
         <div className="text-center space-y-6">
-          <Cpu size={64} className="mx-auto text-[#FF6B00] opacity-20" />
           <h2 className="text-2xl font-bold">Module Not Found</h2>
           <p className={`text-sm ${isDarkMode ? 'text-zinc-500' : 'text-slate-500'}`}>The requested module does not exist in the registry.</p>
-          <button 
-            onClick={() => navigate('/dashboard')} 
+          <button
+            onClick={() => navigate('/dashboard')}
             className="px-6 py-3 bg-[#FF6B00] text-black font-bold rounded-xl text-xs uppercase tracking-widest hover:shadow-[0_0_25px_rgba(255,107,0,0.4)] active:scale-95 transition-all"
           >
             Back to Dashboard
@@ -129,82 +95,28 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
     );
   }
 
-  const executeCode = async () => {
-    if (!pyodideRef.current || isExecuting || !currentSub) return;
-    
-    setIsExecuting(true);
-    const consoleOutput: { type: string; text: string }[] = [];
-    
-    pyodideRef.current.setStdout({
-      batched: (text: string) => {
-        consoleOutput.push({ type: 'stdout', text });
-      }
-    });
-
-    try {
-      await pyodideRef.current.runPythonAsync(code);
-      
-      // Only execute testScript if it exists and is not empty
-      if (currentSub.testScript && currentSub.testScript.trim()) {
-        await pyodideRef.current.runPythonAsync(currentSub.testScript);
-      } else {
-        // Auto-pass if no test script is provided
-        consoleOutput.push({ type: 'stdout', text: `__RESULT__${JSON.stringify({ passed: true })}` });
-      }
-      
-      const resultLine = consoleOutput.find(l => l.text.includes("__RESULT__"));
-      let passed = false;
-      if (resultLine) {
-        const jsonStr = resultLine.text.split("__RESULT__")[1];
-        passed = JSON.parse(jsonStr).passed;
-        const idx = consoleOutput.indexOf(resultLine);
-        consoleOutput.splice(idx, 1);
-      }
-
-      setOutput([
-        { type: 'system', text: `> Executing main.py...` },
-        ...consoleOutput,
-        passed 
-          ? { type: 'success', text: "[SUCCESS] Logic verified. Module requirement met." }
-          : { type: 'info', text: "[INFO] Code executed but did not satisfy lesson criteria." }
-      ]);
-
-      if (passed) {
-        const updated = { ...moduleData };
-        updated.chapters[activeChapter].subModules[activeSubModule].completed = true;
-        setModuleData({ ...updated });
-      }
-
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      setOutput([
-        { type: 'system', text: `> Executing main.py...` },
-        ...consoleOutput,
-        { type: 'error', text: `RUNTIME ERROR: ${errorMessage}` }
-      ]);
-    } finally {
-      setIsExecuting(false);
-    }
-  };
-
   const totalSubs = moduleData.chapters.reduce((acc, ch) => acc + ch.subModules.length, 0);
   const completedSubs = moduleData.chapters.reduce((acc, ch) => acc + ch.subModules.filter(s => s.completed).length, 0);
   const progressPercent = Math.round((completedSubs / totalSubs) * 100);
 
   if (!currentSub) return null;
 
+  // Determine if this is the very last sub-module
+  const isLastSubModule = activeChapter === moduleData.chapters.length - 1 && 
+    activeSubModule === moduleData.chapters[moduleData.chapters.length - 1].subModules.length - 1;
+
   return (
     <div className={`flex h-screen font-sans overflow-hidden transition-colors duration-500 ${isDarkMode ? 'bg-[#0A0A0A] text-zinc-100' : 'bg-gray-50 text-slate-900'}`}>
-      
-      {/* COLLAPSIBLE SIDEBAR */}
-      <aside 
+
+      {/* ─── SIDEBAR ─── */}
+      <aside
         className={`border-r flex flex-col transition-all duration-300 ease-in-out relative ${
           isSidebarVisible ? 'w-80' : 'w-0 overflow-hidden opacity-0'
         } ${isDarkMode ? 'border-zinc-900 bg-[#0D0D0D]' : 'border-slate-200 bg-white'}`}
       >
         <div className={`p-6 border-b flex items-center justify-between min-w-[320px] ${isDarkMode ? 'border-zinc-900' : 'border-slate-200'}`}>
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => navigate('/dashboard')}
               className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-zinc-800 text-zinc-500' : 'hover:bg-slate-100 text-slate-400'}`}
             >
@@ -215,7 +127,7 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
               <h1 className="text-lg font-bold truncate w-40">{moduleData.title}</h1>
             </div>
           </div>
-          <button 
+          <button
             onClick={() => setIsSidebarVisible(false)}
             className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-zinc-800 text-zinc-500 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-900'}`}
             title="Collapse Sidebar"
@@ -229,7 +141,7 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
             const isExpanded = expandedChapters.has(cIdx);
             return (
               <div key={cIdx} className="space-y-1">
-                <button 
+                <button
                   onClick={() => {
                     const next = new Set(expandedChapters);
                     if (next.has(cIdx)) next.delete(cIdx);
@@ -245,7 +157,7 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
                   </h3>
                   {isExpanded ? <ChevronUp size={12} className="text-zinc-600" /> : <ChevronDown size={12} className="text-zinc-600" />}
                 </button>
-                
+
                 {isExpanded && (
                   <div className="space-y-1 mt-1">
                     {chapter.subModules.map((sub, sIdx) => {
@@ -284,166 +196,90 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
             <span>{progressPercent}%</span>
           </div>
           <div className={`w-full h-1.5 rounded-full overflow-hidden ${isDarkMode ? 'bg-zinc-900' : 'bg-slate-200'}`}>
-             <div className="h-full bg-[#FF6B00] shadow-[0_0_10px_#FF6B00] transition-all duration-700" style={{ width: `${progressPercent}%` }} />
+            <div className="h-full bg-[#FF6B00] shadow-[0_0_10px_#FF6B00] transition-all duration-700" style={{ width: `${progressPercent}%` }} />
           </div>
         </div>
       </aside>
 
-      {/* ARTICLE CONTENT */}
-      <section className={`flex-1 flex flex-col border-r ${isDarkMode ? 'border-zinc-900' : 'border-slate-200'}`}>
-        <header className={`h-16 border-b flex items-center justify-between px-8 backdrop-blur-sm ${isDarkMode ? 'border-zinc-900 bg-[#0D0D0D]/30' : 'border-slate-200 bg-white/30'}`}>
+      {/* ─── CONTENT CANVAS ─── */}
+      <main className={`flex-1 flex flex-col min-w-0 ${isDarkMode ? 'bg-[#0A0A0A]' : 'bg-gray-50'}`}>
+        {/* Header bar */}
+        <header className={`h-14 flex-shrink-0 border-b flex items-center justify-between px-6 ${isDarkMode ? 'border-zinc-900 bg-[#0D0D0D]/80 backdrop-blur-md' : 'border-slate-200 bg-white/80 backdrop-blur-md'}`}>
           <div className="flex items-center gap-4">
             {!isSidebarVisible && (
-              <button 
+              <button
                 onClick={() => setIsSidebarVisible(true)}
                 className="p-2 hover:bg-zinc-800 rounded-lg text-[#FF6B00] transition-colors"
                 title="Expand Sidebar"
               >
-                <PanelLeftOpen size={20} />
+                <PanelLeftOpen size={18} />
               </button>
             )}
-            <div className={`flex items-center gap-2 text-xs font-mono uppercase ${isDarkMode ? 'text-zinc-500' : 'text-slate-400'}`}>
-              <BookOpen size={16} />
-              <span>Neural Documentation</span>
+            <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest">
+              <BookOpen size={14} className={isDarkMode ? 'text-zinc-600' : 'text-slate-400'} />
+              <span className={isDarkMode ? 'text-zinc-500' : 'text-slate-400'}>{currentSub.title}</span>
             </div>
+          </div>
+
+          <div className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-widest text-[#FF6B00] font-bold">
+            Reading Mode
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-10 space-y-8 max-w-3xl mx-auto w-full">
-          <div className="space-y-4">
-             <h1 className={`text-4xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{currentSub.title}</h1>
-             <div className={`flex items-center gap-4 text-xs font-mono ${isDarkMode ? 'text-zinc-500' : 'text-slate-400'}`}>
-                <span className="bg-[#FF6B00]/10 px-2 py-1 rounded text-[#FF6B00] border border-[#FF6B00]/20 font-bold tracking-widest">WASM RUNTIME</span>
-                <span>STEP {activeChapter + 1}.{activeSubModule + 1}</span>
-             </div>
-          </div>
-
-          <div className="space-y-6">
-            <MarkdownContent content={currentSub.content} isDarkMode={isDarkMode} />
-
-            <div className="bg-[#FF6B00]/5 border-l-2 border-[#FF6B00] p-6 rounded-r-2xl mt-10">
-              <h4 className="text-[#FF6B00] text-xs font-bold flex items-center gap-2 mb-2 uppercase tracking-widest">
-                <Info size={14} /> 
-                The Task
-              </h4>
-              <p className={`text-sm ${isDarkMode ? 'text-zinc-200' : 'text-slate-800'}`}>
-                {currentSub.taskDescription}
-              </p>
-            </div>
-
-            <h3 className={`text-xl font-bold pt-4 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Logic Constraints</h3>
-            <ul className={`space-y-3 ${isDarkMode ? 'text-zinc-400' : 'text-slate-600'}`}>
-              <li className="flex items-start gap-3">
-                <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#FF6B00]" />
-                Your code executes in a localized WebAssembly kernel.
-              </li>
-              <li className="flex items-start gap-3">
-                <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#FF6B00]" />
-                We verify the state of your variables after execution.
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* RESIZER HANDLE */}
-      <div 
-        onMouseDown={startResizing}
-        className={`w-1 cursor-col-resize flex-shrink-0 transition-all z-50 hover:bg-[#FF6B00]/40 group relative ${isResizing ? 'bg-[#FF6B00]' : 'bg-transparent'}`}
-      >
-        <div className={`absolute inset-y-0 -left-1 -right-1 cursor-col-resize`} />
-      </div>
-
-      {/* REAL IDE (PYODIDE) */}
-      <section 
-        style={{ width: `${editorWidth}px` }}
-        className={`flex flex-col flex-shrink-0 min-w-0 ${isDarkMode ? 'bg-[#080808]' : 'bg-gray-100'}`}
-      >
-        <header className={`h-16 border-b flex flex-shrink-0 items-center justify-between px-6 ${isDarkMode ? 'border-zinc-900 bg-[#0D0D0D]' : 'border-slate-200 bg-white'}`}>
-          <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-400 uppercase font-bold tracking-widest min-w-0 pr-4">
-            {isInterpreterLoading ? (
-              <Loader2 size={12} className="animate-spin text-amber-500 flex-shrink-0" />
-            ) : (
-              <Cpu size={12} className="text-emerald-500 flex-shrink-0" />
-            )}
-            <span className="truncate">{isInterpreterLoading ? 'LOADING KERNEL...' : 'PY_KERNEL_3.10_ACTIVE'}</span>
-          </div>
-          <button 
-            onClick={executeCode}
-            disabled={isExecuting || isInterpreterLoading}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg font-bold text-xs transition-all flex-shrink-0 whitespace-nowrap ${
-              isExecuting || isInterpreterLoading ? 'bg-zinc-800 text-zinc-600 cursor-wait' : 'bg-[#FF6B00] text-black hover:shadow-[0_0_25px_rgba(255,107,0,0.6)] active:scale-95'
-            }`}
-          >
-            {isExecuting ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} fill="currentColor" />}
-            {isExecuting ? 'COMPILING...' : 'EXECUTE'}
-          </button>
-        </header>
-
-        <div className="flex-1 flex flex-col p-4 overflow-hidden relative min-w-0">
-          <div className={`flex-1 rounded-xl border flex flex-col overflow-hidden shadow-2xl min-w-0 ${isDarkMode ? 'bg-[#0D0D0D] border-zinc-900' : 'bg-white border-slate-200'}`}>
-            <div className={`h-10 flex-shrink-0 border-b flex items-center px-4 justify-between ${isDarkMode ? 'bg-[#121212] border-zinc-900' : 'bg-gray-50 border-slate-200'}`}>
-              <div className="flex items-center gap-2 min-w-0">
-                <Code2 size={14} className="text-[#FF6B00] flex-shrink-0" />
-                <span className={`text-[10px] font-mono uppercase tracking-tighter truncate ${isDarkMode ? 'text-zinc-500' : 'text-slate-400'}`}>workspace/main.py</span>
+        {/* Cells */}
+        <div id="module-scroll-container" className="flex-1 overflow-y-auto">
+          <div className={`max-w-4xl mx-auto w-full ${isDarkMode ? 'bg-[#111]' : 'bg-white'} my-6 rounded-xl border shadow-2xl overflow-hidden ${isDarkMode ? 'border-zinc-800' : 'border-slate-200'}`}>
+            {/* Title cell */}
+            <div className={`px-8 py-8 border-b ${isDarkMode ? 'border-zinc-800' : 'border-slate-200'}`}>
+              <div className={`text-[10px] font-mono uppercase tracking-widest mb-3 ${isDarkMode ? 'text-zinc-600' : 'text-slate-400'}`}>
+                Step {activeChapter + 1}.{activeSubModule + 1}
               </div>
+              <h1 className={`text-3xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                {currentSub.title}
+              </h1>
             </div>
-            <div className="flex-1 w-full bg-transparent p-4 font-mono text-sm relative min-h-0 min-w-0">
-              <Editor
-                height="100%"
-                language="python"
-                value={code}
-                theme={isDarkMode ? "vs-dark" : "light"}
-                onChange={(value) => setCode(value || '')}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                  padding: { top: 16 },
-                  scrollBeyondLastLine: false,
-                  smoothScrolling: true,
-                  cursorBlinking: "smooth",
-                  formatOnPaste: true,
-                  wordWrap: "on",
-                  lineNumbersMinChars: 3,
-                  overviewRulerLanes: 0,
-                  hideCursorInOverviewRuler: true,
-                  scrollbar: {
-                    vertical: 'hidden',
-                    horizontal: 'hidden'
-                  }
-                }}
-              />
-              {/* Optional Paste Overlay for security theater if desired */}
-            </div>
-          </div>
 
-          {/* REAL TERMINAL */}
-          <div className={`h-60 mt-4 flex-shrink-0 rounded-xl border flex flex-col overflow-hidden shadow-inner ${isDarkMode ? 'bg-black border-zinc-900' : 'bg-gray-900 border-slate-200'}`}>
-             <div className={`h-8 flex-shrink-0 border-b flex items-center px-4 gap-2 ${isDarkMode ? 'bg-[#0D0D0D] border-zinc-900' : 'bg-black border-slate-700'}`}>
-                <TerminalIcon size={12} className="text-zinc-600 flex-shrink-0" />
-                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest truncate">Real-time Console</span>
-             </div>
-             <div className={`flex-1 min-h-0 min-w-0 p-4 font-mono text-[12px] overflow-y-auto space-y-1 selection:bg-zinc-700 ${isDarkMode ? 'bg-[#050505]' : 'bg-black'}`}>
-                {output.length === 0 ? (
-                  <span className="text-zinc-800 italic select-none">Kernel idle. Awaiting instruction.</span>
-                ) : (
-                  output.map((line, i) => (
-                    <div key={i} className={`
-                      ${line.type === 'success' ? 'text-emerald-400 font-bold' : ''}
-                      ${line.type === 'error' ? 'text-rose-500' : ''}
-                      ${line.type === 'system' ? 'text-zinc-600 italic' : ''}
-                      ${line.type === 'stdout' ? 'text-zinc-100' : ''}
-                      ${line.type === 'info' ? 'text-amber-500' : ''}
-                    `}>
-                      {line.text}
-                    </div>
-                  ))
-                )}
-             </div>
+            {/* Content cells */}
+            {cells.map((cell, idx) => (
+              <W3ExampleCard
+                key={`${currentSub.id}-${idx}`}
+                cell={cell}
+                isDarkMode={isDarkMode}
+              />
+            ))}
+
+            {/* Task description */}
+            {currentSub.taskDescription && (
+              <div className={`px-8 py-6 border-t ${isDarkMode ? 'border-zinc-800 bg-[#FF6B00]/5' : 'border-slate-200 bg-orange-50/50'}`}>
+                <p className="text-xs font-mono uppercase tracking-widest mb-2 text-[#FF6B00] font-bold">
+                  📝 Task
+                </p>
+                <p className={`text-sm ${isDarkMode ? 'text-zinc-300' : 'text-slate-700'}`}>
+                  {currentSub.taskDescription}
+                </p>
+              </div>
+            )}
+
+            {/* ─── MARK AS COMPLETE BUTTON ─── */}
+            <div className={`px-8 py-8 border-t ${isDarkMode ? 'border-zinc-800 bg-[#0D0D0D]' : 'border-slate-200 bg-slate-50'}`}>
+              {currentSub.completed ? (
+                <div className="flex items-center gap-3 text-[#FF6B00]">
+                  <CheckCircle2 size={20} />
+                  <span className="font-bold text-sm">Section Completed</span>
+                </div>
+              ) : (
+                <button
+                  onClick={handleMarkComplete}
+                  className="group flex items-center gap-3 px-8 py-4 rounded-xl font-bold text-sm transition-all duration-300 bg-[#FF6B00] text-white hover:bg-[#ff7b1a] shadow-[0_4px_20px_rgba(255,107,0,0.3)] hover:shadow-[0_8px_30px_rgba(255,107,0,0.5)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+                >
+                  {isLastSubModule ? 'Complete Module' : 'Mark as Complete & Continue'}
+                  <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      </section>
+      </main>
     </div>
   );
 };

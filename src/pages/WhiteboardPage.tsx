@@ -10,7 +10,6 @@ import {
   Lightbulb,
   Zap,
   Cpu,
-  RefreshCw,
   Search,
   ArrowLeft
 } from 'lucide-react';

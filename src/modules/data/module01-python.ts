@@ -27,18 +27,9 @@ export const module01: ModuleData = {
           "completed": false
         },
         {
-          "id": "ch1-installing-python",
-          "title": "Installing Python",
-          "content": "To start writing Python code, you first need to install the Python interpreter on your machine. Visit python.org and download the latest Python 3.x version for your operating system.\n\nOn Windows, the installer will show a checkbox that says \"Add Python to PATH.\" Make sure you check this box \u2014 it allows you to run Python from any terminal window. Without it, your system will not know where to find the python command. On macOS and Linux, Python often comes pre-installed, but the pre-installed version may be outdated. You can check your version and update if needed.\n\nAfter installation, open your terminal (Command Prompt on Windows, Terminal on macOS/Linux) and verify the installation by running:\n\n\n\n```python\npython --version\n\n# Output: Python 3.12.x (or similar)\n```\n\nIf you see a version number starting with 3, you are all set. If you see Python 2.x or an error, you may need to use python3 instead of python, or revisit your installation steps.",
-          "taskDescription": "Read the documentation and experiment with the code examples in the editor.",
-          "initialCode": "# Experiment here\n",
-          "testScript": "",
-          "completed": false
-        },
-        {
           "id": "ch1-your-first-python-program",
           "title": "Your First Python Program",
-          "content": "Traditionally, the very first program in any language prints \"Hello, World!\" to the screen. In Python, this is a single line of code:\n\n\n\n```python\nprint(\"Hello, World!\")\n```\n\nLet us break this down. print() is a built-in function that outputs text to the console. The parentheses tell Python that we are calling (executing) this function. Inside the parentheses, we pass the text we want to display, enclosed in double quotes. This quoted text is called a string \u2014 a sequence of characters.\n\nTo run this program, save the line above in a file called hello.py (the .py extension tells your system this is a Python file), then run it from the terminal:\n\n\n\n```python\npython hello.py\n\n# Output: Hello, World!\n```\n\nCongratulations \u2014 you have just written and executed your first Python program. Every program you will ever write, no matter how complex, builds on these fundamentals: writing instructions in a file and asking Python to execute them.",
+          "content": "Traditionally, the very first program in any language prints \"Hello, World!\" to the screen. In Python, this is a single line of code:\n\n\n\n```python\nprint(\"Hello, World!\")\n```\n\nLet us break this down. print() is a built-in function that outputs text to the console. The parentheses tell Python that we are calling (executing) this function. Inside the parentheses, we pass the text we want to display, enclosed in double quotes. This quoted text is called a string \u2014 a sequence of characters.\n\nCongratulations \u2014 you have just written and executed your first Python program. Every program you will ever write, no matter how complex, builds on these fundamentals: writing instructions in a file and asking Python to execute them.",
           "taskDescription": "Read the documentation and experiment with the code examples in the editor.",
           "initialCode": "# Experiment here\n",
           "testScript": "",
@@ -48,15 +39,6 @@ export const module01: ModuleData = {
           "id": "ch1-how-python-executes-code",
           "title": "How Python Executes Code",
           "content": "Python is an interpreted language, which means you do not need to compile your code into machine code before running it (unlike languages such as C or Java). When you run a .py file, the following happens behind the scenes:\n\nFirst, the Python interpreter reads your source code line by line and checks it for syntax errors. If the code is valid, it compiles it into bytecode \u2014 an intermediate, platform-independent representation that is not human-readable. This bytecode is then executed by the Python Virtual Machine (PVM), which translates each bytecode instruction into operations your computer's processor understands.\n\nThis interpretation model makes Python excellent for rapid prototyping, scripting, and iterative development \u2014 you change a line of code and immediately see the result. The trade-off is that Python can be slower than compiled languages for compute-heavy tasks, though in practice this rarely matters for most applications, and libraries like NumPy handle performance-critical operations in optimized C code under the hood.",
-          "taskDescription": "Read the documentation and experiment with the code examples in the editor.",
-          "initialCode": "# Experiment here\n",
-          "testScript": "",
-          "completed": false
-        },
-        {
-          "id": "ch1-python-interactive-shell-repl",
-          "title": "Python Interactive Shell (REPL)",
-          "content": "Python comes with an interactive shell, also known as REPL, which stands for Read-Eval-Print Loop. You can start it by typing python (or python3) in your terminal with no filename. The shell reads what you type, evaluates it immediately, prints the result, and loops back to wait for your next input.\n\n\n\n```python\n>>> 2 + 3\n\n5\n\n>>> print(\"Hello from REPL!\")\n\nHello from REPL!\n\n>>> type(42)\n\n\<class 'int'>\n```\n\nIn the example above, the \>\>\> symbols are Python's prompt, indicating it is waiting for your input. When you type 2 + 3, Python evaluates the arithmetic expression and prints the result 5. The print() function outputs a string, and type() tells you the data type of a value \u2014 here, 42 is an int (integer).\n\nThe REPL is incredibly useful for quick experiments, testing small snippets, and exploring how Python works. Think of it as a calculator on steroids. Type exit() or press Ctrl+D (Ctrl+Z on Windows) to leave the REPL and return to your normal terminal.",
           "taskDescription": "Read the documentation and experiment with the code examples in the editor.",
           "initialCode": "# Experiment here\n",
           "testScript": "",
@@ -1059,7 +1041,7 @@ export const module01: ModuleData = {
         {
           "id": "ch9-the-name-guard",
           "title": "The \_\_name\_\_ Guard",
-          "content": "When Python runs a file directly (e.g., python math_utils.py), it sets the special variable \_\_name\_\_ to the string \\\"\_\_main\_\_\\\". When the file is imported as a module, \_\_name\_\_ is set to the module's name (e.g., \\\"math_utils\\\"). This lets you include code that runs only when the file is executed directly, not when it is imported.\n\n\n\n```python\n# math_utils.py\n\ndef add(a, b):\n\n    return a + b\n\nif \_\_name\_\_ == \"\_\_main\_\_\":\n\n    # This block runs ONLY when math_utils.py is executed directly\n\n    # It does NOT run when another file imports math_utils\n\n    print(add(2, 3)) # 5\n\n    print(\"Running tests\...\")\n```\n\nThis pattern is essential for writing reusable modules. Without it, any test code or scripts at the module level would execute every time someone imports your module, which is unexpected behavior. The \_\_name\_\_ guard lets you include test code, demonstrations, or a main() function in the same file as your library code.",
+          "content": "When Python runs a file directly, it sets the special variable \_\_name\_\_ to the string \\\"\_\_main\_\_\\\". When the file is imported as a module, \_\_name\_\_ is set to the module's name (e.g., \\\"math_utils\\\"). This lets you include code that runs only when the file is executed directly, not when it is imported.\n\n\n\n```python\n# math_utils.py\n\ndef add(a, b):\n\n    return a + b\n\nif \_\_name\_\_ == \"\_\_main\_\_\":\n\n    # This block runs ONLY when math_utils.py is executed directly\n\n    # It does NOT run when another file imports math_utils\n\n    print(add(2, 3)) # 5\n\n    print(\"Running tests\...\")\n```\n\nThis pattern is essential for writing reusable modules. Without it, any test code or scripts at the module level would execute every time someone imports your module, which is unexpected behavior. The \_\_name\_\_ guard lets you include test code, demonstrations, or a main() function in the same file as your library code.",
           "taskDescription": "Read the documentation and experiment with the code examples in the editor.",
           "initialCode": "# Experiment here\n",
           "testScript": "",
@@ -1078,24 +1060,6 @@ export const module01: ModuleData = {
           "id": "ch9-what-is-a-package",
           "title": "What is a Package?",
           "content": "A package is a directory containing Python modules, organized with a special \_\_init\_\_.py file. It lets you create hierarchies of modules for large projects.\n\n\n\n```python\n# Directory structure:\n\n    # mypackage/\n\n    # \_\_init\_\_.py # Makes this directory a package\n\n    # math_ops.py # A module inside the package\n\n    # string_ops.py # Another module\n\n    # sub_package/ # A sub-package\n\n    # \_\_init\_\_.py\n\n    # advanced.py\n\n    # Usage:\n\n        from mypackage import math_ops\n\n        from mypackage.sub_package import advanced\n```\n\nThe \_\_init\_\_.py file can be empty (just signals \"this is a package\") or can contain initialization code that runs when the package is imported. Packages let you organize large codebases into logical groupings (e.g., a web application might have packages for models, views, utils, tests).",
-          "taskDescription": "Read the documentation and experiment with the code examples in the editor.",
-          "initialCode": "# Experiment here\n",
-          "testScript": "",
-          "completed": false
-        },
-        {
-          "id": "ch9-installing-third-party-packages-with-pip",
-          "title": "Installing Third-Party Packages with pip",
-          "content": "pip is Python's package manager. It downloads and installs packages from PyPI (the Python Package Index), which hosts over 400,000 packages.\n\n\n\n```python\npip install requests # Install a package\n\npip install requests==2.31.0 # Install a specific version\n\npip list # List all installed packages\n\npip freeze > requirements.txt # Save dependency list to a file\n\npip install -r requirements.txt # Install all dependencies from file\n```\n\nThe requirements.txt file is how Python projects declare their dependencies. When you share your project, others can run pip install -r requirements.txt to install everything they need. For production projects, always pin specific versions (like requests==2.31.0) to prevent breaking changes.",
-          "taskDescription": "Read the documentation and experiment with the code examples in the editor.",
-          "initialCode": "# Experiment here\n",
-          "testScript": "",
-          "completed": false
-        },
-        {
-          "id": "ch9-virtual-environments",
-          "title": "Virtual Environments",
-          "content": "Virtual environments are isolated Python installations for each project. Without them, all projects share the same packages, which leads to version conflicts (Project A needs requests 2.28, Project B needs requests 2.31). Virtual environments solve this by giving each project its own independent set of packages.\n\n\n\n```python\n# Create a virtual environment named 'myenv'\n\npython -m venv myenv\n\n# Activate it (creates an isolated environment)\n\n# Windows: myenv\\\\Scripts\\\\activate\n\n# macOS/Linux: source myenv/bin/activate\n\n# Now pip installs packages ONLY into this environment\n\npip install flask\n\n# Deactivate when done (return to system Python)\n\ndeactivate\n```\n\nWhen you activate a virtual environment, your terminal's python and pip commands point to the environment's copies, not the system-wide ones. Any packages you install go into the environment's directory and are completely isolated from other projects. This is considered an essential practice for all Python development. Most IDEs (VS Code, PyCharm) detect and manage virtual environments automatically.",
           "taskDescription": "Read the documentation and experiment with the code examples in the editor.",
           "initialCode": "# Experiment here\n",
           "testScript": "",

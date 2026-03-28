@@ -20,8 +20,7 @@ import {
   ArrowLeft, 
   Globe, 
   Copy, 
-  Check,
-  ChevronRight
+  Check
 } from 'lucide-react';
 
 interface Comment {
