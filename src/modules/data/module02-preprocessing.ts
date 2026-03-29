@@ -43,6 +43,8 @@ c = np.array([1, 2, 3], dtype=np.float64)
 print(c)  # [1. 2. 3.]
 \`\`\`
 
+**💡 What this achieves:** This transforms standard Python lists into highly optimized NumPy arrays. The \`shape\`, \`ndim\` (dimensions), and \`dtype\` (data type) properties allow you to instantly understand the mathematical structure of your data.
+
 ---
 
 ### Array Generation Functions
@@ -66,6 +68,8 @@ print("arange:", r1)
 print("linspace:", r2)
 \`\`\`
 
+**💡 What this achieves:** Instead of manually typing out hundreds of numbers, these functions instantly generate arrays of any size filled with zeros, ones, or random values. This is essential for initializing weights in neural networks or creating dummy data for testing.
+
 > **Note:** \`np.arange()\` stop is **exclusive**, \`np.linspace()\` stop is **inclusive**. This trips up many beginners.
 
 ---
@@ -88,6 +92,8 @@ print(m[:, 1])       # [2 5 8] — all rows, column 1
 print(m[0:2, 1:3])  # [[2 3] [5 6]] — sub-matrix
 \`\`\`
 
+**💡 What this achieves:** Slicing allows you to extract specific rows or columns without copying the underlying data. This is how you separate your features (inputs) from your labels (outputs) when training a machine learning model.
+
 The syntax \`m[row, col]\` is the key pattern. Use \`:\` alone to mean "all rows" or "all columns".
 
 ---
@@ -108,6 +114,8 @@ print(a[a > 20])  # [23 42 31] — shorthand
 print(a[(a > 10) & (a < 30)])  # [15 23 19]
 print(a[~(a > 20)])            # [15  8  7 19]
 \`\`\`
+
+**💡 What this achieves:** Boolean indexing is the fastest way to conditionally filter data in Python. Instead of writing a slow \`for\` loop, NumPy evaluates the condition across the entire array simultaneously in C, returning a subset in milliseconds.
 
 > **Critical:** Use \`&\` not \`and\`, use \`|\` not \`or\`, and wrap each condition in parentheses. Python's \`and\`/\`or\` cannot work element-wise on arrays.
 
@@ -135,6 +143,8 @@ print(np.mean(m))         # 3.5
 print(np.argmax(m))       # 5  (index of max in flattened array)
 \`\`\`
 
+**💡 What this achieves:** Vectorization replaces explicit loops with highly optimized code under the hood. When you multiply \`a * b\`, NumPy multiplies the elements pair-wise simultaneously. Over entire datasets, this is 100x faster than standard Python.
+
 > **axis=0** collapses rows (operates down columns). **axis=1** collapses columns (operates across rows). This same convention carries into Pandas — master it now.
 
 ---
@@ -161,6 +171,8 @@ print(np.hstack([x, y]))      # [1 2 3 4 5 6]
 print(np.concatenate([x, y])) # [1 2 3 4 5 6]
 \`\`\`
 
+**💡 What this achieves:** Machine learning models expect data in very specific shapes (usually taking a 2D matrix representing \`(samples, features)\`). Reshaping allows you to cleanly reorganize 1D arrays without altering the actual data points.
+
 The \`-1\` shortcut is invaluable: it tells NumPy to calculate that dimension automatically. \`a.reshape(4, -1)\` on a 12-element array produces shape \`(4, 3)\` because 12/4 = 3.
 
 ---
@@ -186,6 +198,8 @@ mean_val = np.nanmean(a)
 a_imputed = np.where(np.isnan(a), mean_val, a)
 print(a_imputed)      # [1.  2.  3.  4.  5.]
 \`\`\`
+
+**💡 What this achieves:** Real-world data is mathematically messy. This snippet identifies null values (\`NaN\`) and intelligently replaces them with the column's mean. If you fed raw \`NaN\` values into a machine learning algorithm, it would crash immediately!
 
 \`np.where(condition, value_if_true, value_if_false)\` is like a vectorized if-else — extremely useful for conditional replacements throughout preprocessing.`,
           taskDescription: "Import numpy as np. Create a 1D array of integers from 1 to 10 using np.arange(1, 11). Reshape it into a (2, 5) matrix and print the sum of each column using axis=0.",
@@ -388,6 +402,8 @@ print(s['b'])     # 20 — by label
 print(s.iloc[1])  # 20 — by integer position
 \`\`\`
 
+**💡 What this achieves:** A Series is like a single column in Excel, but computationally charged. It maps a searchable index label to every data point for lightning-fast lookups.
+
 The two access methods: **.loc[]** (by label) and **.iloc[]** (by integer position). \`loc\` uses the index labels you defined; \`iloc\` uses 0-based positions regardless of labels.
 
 ---
@@ -406,6 +422,8 @@ df = pd.DataFrame({
 })
 print(df)
 \`\`\`
+
+**💡 What this achieves:** The DataFrame is the absolute gold standard for data science in Python. This structure stores your tabular data (Rows and Columns), fully preparing it for filtering, aggregation, and AI processing.
 
 ---
 
@@ -427,6 +445,8 @@ print(df.dtypes)         # data type of each column
 print(df.describe())     # count, mean, std, min, max, quartiles
 print(df.info())         # column names, dtypes, non-null counts
 \`\`\`
+
+**💡 What this achieves:** Before manipulating data, you must understand it. \`df.info()\` instantly reveals missing values and data types, while \`df.describe()\` gives you the statistical distribution (min, max, and percentiles) of your metrics perfectly.
 
 \`df.info()\` is the single most important exploratory command — it reveals missing values and data types at a glance.
 
@@ -462,6 +482,8 @@ print(df[df['City'] == 'NYC'])
 print(df[(df['Age'] > 25) & (df['Salary'] > 75000)])
 \`\`\`
 
+**💡 What this achieves:** This code demonstrates how to surgically extract exactly the rows and columns you need based on intelligent conditions (e.g., slicing out individuals older than 25 making over $75k).
+
 ---
 
 ### Handling Missing Data
@@ -492,6 +514,8 @@ df['A'].bfill()                        # Backward fill (use next value)
 print(df.fillna(df.mean(numeric_only=True)))
 \`\`\`
 
+**💡 What this achieves:** Machine learning algorithms cannot train on missing data. These commands identify missing counts and apply strategic statistical repairs—like filling gaps with the median value—to salvage incomplete datasets.
+
 Choose your strategy based on context: **drop** when missing % is small; **fill with mean/median** to preserve size; **forward/backward fill** for time-series.
 
 ---
@@ -520,6 +544,8 @@ df.sort_values(['Net', 'Tax'])
 print(df)
 \`\`\`
 
+**💡 What this achieves:** 'Feature Engineering' begins here. By cleanly creating new columns (like \`Tax\` or \`Net\`) and applying Lambda conditional logic across thousands of rows instantly, you extract higher-order predictive signal from raw numbers.
+
 ---
 
 ### Grouping and Aggregation
@@ -543,6 +569,8 @@ print(df.groupby('City')['Salary'].agg(['mean', 'min', 'max', 'count']))
 print(df.groupby(['City', 'Dept'])['Salary'].mean())
 \`\`\`
 
+**💡 What this achieves:** Similar to Excel Pivot tables or SQL \`GROUP BY\`, this isolates specific demographic segments (like \`City\` and \`Dept\`) to compute targeted statistical aggregates (like Average Salary).
+
 \`groupby()\` is the Pandas equivalent of SQL's \`GROUP BY\`. The pattern is always: **split → apply → combine**.
 
 ---
@@ -563,6 +591,8 @@ df['Has_A'] = df['Name'].str.contains('a', case=False)
 print(df)
 \`\`\`
 
+**💡 What this achieves:** Raw text data is notoriously messy. This script standardizes whitespace, forces uniform capitalization, and searches for substrings across the whole column simultaneously.
+
 ---
 
 ### Merging DataFrames
@@ -582,6 +612,8 @@ print(inner)
 print("\\nLeft join:")
 print(left)
 \`\`\`
+
+**💡 What this achieves:** Just like an SQL \`JOIN\`, merging fuses multiple tables together based on a shared ID key to consolidate data across different databases into one master table.
 
 ---
 
@@ -604,6 +636,8 @@ df['Age'] = pd.to_numeric(df['Age'], errors='coerce')  # invalid → NaN
 df_encoded = pd.get_dummies(df, columns=['City'], drop_first=True)
 print(df_encoded)
 \`\`\`
+
+**💡 What this achieves:** Neural networks only understand numbers. \`get_dummies()\` (One-Hot Encoding) is a critical step that converts categorical text—like City names—into binary \`(0/1)\` numeric columns so machines can process them!
 
 \`pd.to_numeric(errors='coerce')\` is safer than \`astype()\` because it converts invalid values to NaN instead of crashing. \`get_dummies()\` converts text categories to binary (0/1) columns — required for most ML models.`,
           taskDescription: "Create a DataFrame with columns Name, Score, Grade for 3 students. Add a 'Passed' column where True if Score >= 60. Sort by Score descending and print.",
@@ -843,6 +877,8 @@ plt.tight_layout()
 plt.show()
 \`\`\`
 
+**💡 What this achieves:** Matplotlib provides you a literal canvas (\`fig\`) and specific sub-regions (\`ax\`) to programmatically draw stunning graphs pixel-by-pixel.
+
 The **object-oriented approach** (\`fig, ax = plt.subplots()\`) is preferred for complex visualizations. The \`fig\` controls figure size and saving; the \`ax\` controls plot content.
 
 ---
@@ -914,6 +950,8 @@ plt.colorbar(scatter, label='Score')
 plt.show()
 \`\`\`
 
+**💡 What this achieves:** These foundational Plot structures (Lines, Bars, Histograms, Scatters) allow you to spot trends, compare categories, understand mathematical distributions, and identify linear relationships respectively.
+
 ---
 
 ### Subplots — Multiple Plots in One Figure
@@ -943,6 +981,8 @@ axes[1, 1].set_title('Bar Chart')
 plt.tight_layout()
 plt.show()
 \`\`\`
+
+**💡 What this achieves:** Creating a dense grid of visualizations (a Dashboard) enables you to instantly compare multiple distinct metrics side-by-side without swapping figures.
 
 \`plt.subplots(rows, cols)\` creates a grid and returns a 2D array of Axes. Access each with \`axes[row, col]\`. \`plt.tight_layout()\` prevents label overlap.`,
           taskDescription: "Create a 1x2 figure: left subplot is a histogram of 500 random normal values, right subplot is a scatter plot of 50 random x/y points. Add titles and call plt.show().",
@@ -989,6 +1029,8 @@ plt.tight_layout()
 plt.show()
 \`\`\`
 
+**💡 What this achieves:** Instead of manually formatting Matplotlib blocks, Seaborn condenses complex statistical distribution plotting into elegant one-liners. This empowers data scientists to rapidly explore feature density.
+
 The \`kde=True\` flag overlays a smooth **Kernel Density Estimate** curve. Box plots are invaluable for spotting **outliers** (dots beyond whiskers) and comparing distributions across categories. The box = IQR, line = median, whiskers = 1.5×IQR.
 
 ---
@@ -1020,6 +1062,8 @@ plt.suptitle('Pair Plot — Tips Dataset', y=1.02)
 plt.show()
 \`\`\`
 
+**💡 What this achieves:** The Pair Plot is the absolute pinnacle of Exploratory Data Analysis. Generating a massive grid of scatterplots for every single numeric interaction immediately exposes feature correlations across the entire dataset.
+
 \`sns.pairplot()\` is a powerful EDA tool — it creates scatter plots for every pair of numeric columns with distribution plots on the diagonal. This instantly reveals correlations, clusters, and outliers.
 
 ---
@@ -1040,6 +1084,8 @@ ax.set_title('Correlation Matrix')
 plt.tight_layout()
 plt.show()
 \`\`\`
+
+**💡 What this achieves:** Visualizing highly correlated features via a heatmap allows you to prevent collinearity issues or pinpoint independent variables that best predict your machine learning target variable.
 
 Values near **+1** = strong positive correlation, near **-1** = strong negative, near **0** = no linear relationship. \`annot=True\` prints correlation values in cells. \`center=0\` ensures blue = negative, red = positive.
 
@@ -1069,6 +1115,8 @@ axes[2].set_title('Average Tip by Day')
 plt.tight_layout()
 plt.show()
 \`\`\`
+
+**💡 What this achieves:** This code quickly measures class imbalance, demographic densities, and statistical uncertainty (confidence intervals) of categorical data before processing.
 
 **Count plots** reveal class imbalance. **Violin plots** combine box + KDE to show full distribution shape. **Bar plots** show means with confidence intervals (shaded area = uncertainty).`,
           taskDescription: "Load seaborn's 'tips' dataset. Create a countplot showing number of records per 'day', and a boxplot showing 'total_bill' distribution per 'day'. Show both in a 1x2 figure.",
