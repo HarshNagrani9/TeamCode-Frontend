@@ -25,6 +25,10 @@ const EditorPage: React.FC<EditorPageProps> = ({ isDarkMode }) => {
   const [problem, setProblem] = useState<string>('');
   const [solutionCode, setSolutionCode] = useState<string>('');
   const [isSolutionModalOpen, setIsSolutionModalOpen] = useState(false);
+  
+  const [plotImage, setPlotImage] = useState<string | null>(null);
+  const [isPlotModalOpen, setIsPlotModalOpen] = useState(false);
+
   const [output, setOutput] = useState<{ type: string; text: string }[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [isInterpreterLoading, setIsInterpreterLoading] = useState(true);
@@ -63,6 +67,17 @@ const EditorPage: React.FC<EditorPageProps> = ({ isDarkMode }) => {
     }
   }, [searchParams]);
 
+  // Handle Matplotlib Plot Interception
+  useEffect(() => {
+    (window as any).handleMatplotlibPlot = (base64Data: string) => {
+      setPlotImage(base64Data);
+      setIsPlotModalOpen(true);
+    };
+    return () => {
+      delete (window as any).handleMatplotlibPlot;
+    };
+  }, []);
+
   // Load Pyodide - check if already loaded first
   useEffect(() => {
     let cancelled = false;
@@ -83,10 +98,27 @@ const EditorPage: React.FC<EditorPageProps> = ({ isDarkMode }) => {
           const pyodide = await (window as any).loadPyodide({
             indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.1/full/',
           });
+          
+          await pyodide.loadPackage("micropip");
+          
+          if (cancelled) return;
+
+          // Load core scientific packages from the Pyodide distribution
+          setOutput([{ type: 'system', text: '> Loading NumPy, Pandas, Matplotlib...' }]);
+          await pyodide.loadPackage(['numpy', 'pandas', 'matplotlib', 'Pillow']);
+
+          if (cancelled) return;
+
+          // Load seaborn via micropip (pure-Python package)
+          setOutput([{ type: 'system', text: '> Loading Seaborn...' }]);
+          await pyodide.runPythonAsync(
+            "import micropip; await micropip.install('seaborn')"
+          );
+
           if (!cancelled) {
             pyodideRef.current = pyodide;
             setIsInterpreterLoading(false);
-            setOutput([{ type: 'system', text: '> Python 3.12 Environment Initialized. Ready.' }]);
+            setOutput([{ type: 'system', text: '> Python 3.12 ready — NumPy · Pandas · Matplotlib · Seaborn loaded.' }]);
           }
         } catch (err) {
           if (!cancelled) {
@@ -153,7 +185,53 @@ const EditorPage: React.FC<EditorPageProps> = ({ isDarkMode }) => {
     });
 
     try {
+      setOutput([{ type: 'system', text: '> Checking and installing dependencies...' }]);
+      await pyodideRef.current.loadPackagesFromImports(code);
+
+      // Inject custom plt.show() and patch sns.load_dataset()
+      const environmentInitCode = `
+try:
+    import warnings
+    warnings.filterwarnings('ignore')
+except Exception:
+    pass
+
+try:
+    import base64
+    import io
+    import js
+    import matplotlib.pyplot as plt
+
+    def custom_show(*args, **kwargs):
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        data = base64.b64encode(buf.read()).decode('utf-8')
+        js.window.handleMatplotlibPlot(data)
+        plt.clf()
+
+    plt.show = custom_show
+except Exception:
+    pass
+
+try:
+    import pandas as pd
+    import seaborn as sns
+    import pyodide.http
+
+    def patched_load_dataset(name, cache=True, data_home=None, **kws):
+        url = f"https://raw.githubusercontent.com/mwaskom/seaborn-data/master/{name}.csv"
+        buffer = pyodide.http.open_url(url)
+        return pd.read_csv(buffer, **kws)
+
+    sns.load_dataset = patched_load_dataset
+except Exception:
+    pass
+`;
+      await pyodideRef.current.runPythonAsync(environmentInitCode);
+
       await pyodideRef.current.runPythonAsync(code);
+      
       setOutput([
         { type: 'system', text: `> python main.py` },
         ...consoleOutput,
@@ -173,6 +251,37 @@ const EditorPage: React.FC<EditorPageProps> = ({ isDarkMode }) => {
 
   return (
     <>
+      {/* ─── PLOT MODAL ─── */}
+      {isPlotModalOpen && plotImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className={`w-full max-w-3xl rounded-2xl overflow-hidden shadow-2xl ${isDarkMode ? 'bg-[#111] border border-zinc-800' : 'bg-white border border-slate-200'}`}>
+            <div className={`px-6 py-4 border-b flex items-center justify-between ${isDarkMode ? 'border-zinc-800' : 'border-slate-200'}`}>
+              <div className="flex items-center gap-2 text-[#FF6B00]">
+                 <FileCode size={18} />
+                 <h3 className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Figure Output</h3>
+              </div>
+              <button 
+                onClick={() => setIsPlotModalOpen(false)}
+                className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-slate-100 text-slate-500'}`}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className={`p-6 flex justify-center items-center ${isDarkMode ? 'bg-[#0A0A0A]' : 'bg-slate-50'}`}>
+              <img src={`data:image/png;base64,${plotImage}`} alt="Matplotlib output" className="max-w-full max-h-[60vh] object-contain rounded-lg bg-white p-2" />
+            </div>
+            <div className={`px-6 py-4 border-t flex justify-end ${isDarkMode ? 'border-zinc-800 bg-[#111]' : 'border-slate-200 bg-white'}`}>
+              <button
+                onClick={() => setIsPlotModalOpen(false)}
+                className="px-6 py-2 bg-[#FF6B00] text-white font-bold rounded-xl transition-transform active:scale-95 hover:shadow-[0_0_15px_rgba(255,107,0,0.3)]"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ─── SOLUTION MODAL ─── */}
       {isSolutionModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
