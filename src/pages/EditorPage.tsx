@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
+import MarkdownContent from '../modules/components/MarkdownContent';
 import { 
   Play, 
   ArrowLeft, 
@@ -8,7 +9,8 @@ import {
   Cpu, 
   Terminal as TerminalIcon,
   FolderTree,
-  FileCode
+  FileCode,
+  X
 } from 'lucide-react';
 
 interface EditorPageProps {
@@ -20,6 +22,9 @@ const EditorPage: React.FC<EditorPageProps> = ({ isDarkMode }) => {
   const navigate = useNavigate();
   
   const [code, setCode] = useState<string>('');
+  const [problem, setProblem] = useState<string>('');
+  const [solutionCode, setSolutionCode] = useState<string>('');
+  const [isSolutionModalOpen, setIsSolutionModalOpen] = useState(false);
   const [output, setOutput] = useState<{ type: string; text: string }[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [isInterpreterLoading, setIsInterpreterLoading] = useState(true);
@@ -37,6 +42,24 @@ const EditorPage: React.FC<EditorPageProps> = ({ isDarkMode }) => {
       }
     } else {
       setCode('# Write your Python code here\nprint("Hello, Neural Learner!")');
+    }
+
+    const encodedProblem = searchParams.get('problem');
+    if (encodedProblem) {
+      try {
+        setProblem(decodeURIComponent(escape(atob(encodedProblem))));
+      } catch {
+        setProblem('');
+      }
+    }
+
+    const encodedSolution = searchParams.get('solution');
+    if (encodedSolution) {
+      try {
+        setSolutionCode(decodeURIComponent(escape(atob(encodedSolution))));
+      } catch {
+        setSolutionCode('');
+      }
     }
   }, [searchParams]);
 
@@ -149,8 +172,42 @@ const EditorPage: React.FC<EditorPageProps> = ({ isDarkMode }) => {
   }, [code, isExecuting]);
 
   return (
-    <div className={`flex flex-col h-screen font-sans ${isDarkMode ? 'bg-[#0D0D0D] text-zinc-100' : 'bg-slate-50 text-slate-900'}`}>
-      {/* ─── TOP NAVBAR ─── */}
+    <>
+      {/* ─── SOLUTION MODAL ─── */}
+      {isSolutionModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className={`w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl ${isDarkMode ? 'bg-[#111] border border-zinc-800' : 'bg-white border border-slate-200'}`}>
+            <div className={`px-6 py-4 border-b flex items-center justify-between ${isDarkMode ? 'border-zinc-800' : 'border-slate-200'}`}>
+              <div className="flex items-center gap-2 text-[#FF6B00]">
+                 <FileCode size={18} />
+                 <h3 className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Solution Code</h3>
+              </div>
+              <button 
+                onClick={() => setIsSolutionModalOpen(false)}
+                className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-slate-100 text-slate-500'}`}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className={`px-6 py-5 font-mono text-sm overflow-x-auto max-h-[60vh] ${isDarkMode ? 'bg-[#0A0A0A]' : 'bg-slate-50'}`}>
+              <pre className={isDarkMode ? 'text-zinc-300' : 'text-slate-800'}>
+                {solutionCode}
+              </pre>
+            </div>
+            <div className={`px-6 py-4 border-t flex justify-end ${isDarkMode ? 'border-zinc-800 bg-[#111]' : 'border-slate-200 bg-white'}`}>
+              <button
+                onClick={() => setIsSolutionModalOpen(false)}
+                className="px-6 py-2 bg-[#FF6B00] text-white font-bold rounded-xl transition-transform active:scale-95 hover:shadow-[0_0_15px_rgba(255,107,0,0.3)]"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className={`flex flex-col h-screen font-sans ${isDarkMode ? 'bg-[#0D0D0D] text-zinc-100' : 'bg-slate-50 text-slate-900'}`}>
+        {/* ─── TOP NAVBAR ─── */}
       <header className={`h-14 border-b flex items-center justify-between px-6 flex-shrink-0 ${isDarkMode ? 'border-zinc-900 bg-[#121212]' : 'border-slate-200 bg-white'}`}>
         <div className="flex items-center gap-4">
           <button 
@@ -201,21 +258,43 @@ const EditorPage: React.FC<EditorPageProps> = ({ isDarkMode }) => {
       {/* ─── MAIN IDE GRID ─── */}
       <div className="flex-1 flex overflow-hidden">
         
-        {/* FILE EXPLORER */}
-        <div className={`w-56 border-r flex flex-col flex-shrink-0 ${isDarkMode ? 'border-zinc-900 bg-[#0A0A0A]' : 'border-slate-200 bg-slate-50'}`}>
-          <div className={`h-10 border-b flex items-center px-4 text-[10px] font-mono uppercase tracking-widest font-bold ${isDarkMode ? 'border-zinc-900 text-zinc-500' : 'border-slate-200 text-slate-400'}`}>
-            <FolderTree size={14} className="mr-2" />
-            Explorer
-          </div>
-          <div className="flex-1 p-2 space-y-1">
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-              isDarkMode ? 'bg-[#FF6B00]/10 text-white border border-[#FF6B00]/20' : 'bg-orange-100 text-orange-900 border border-orange-200'
-            }`}>
-              <FileCode size={14} className="text-[#FF6B00]" />
-              <span className="text-xs font-mono">main.py</span>
+        {/* LEFT PANE (EXPLORER OR PROBLEM) */}
+        {problem ? (
+          <div className={`w-96 border-r flex flex-col flex-shrink-0 overflow-hidden ${isDarkMode ? 'border-zinc-900 bg-[#0A0A0A]' : 'border-slate-200 bg-slate-50'}`}>
+            <div className={`h-10 border-b flex items-center px-4 text-[10px] font-mono uppercase tracking-widest font-bold ${isDarkMode ? 'border-zinc-900 text-[#FF6B00]' : 'border-slate-200 text-orange-600'}`}>
+              <FileCode size={14} className="mr-2" />
+              Practice Problem
+            </div>
+            <div className={`flex-1 overflow-y-auto px-6 py-6 font-sans text-sm ${isDarkMode ? 'prose-invert text-zinc-300' : 'text-slate-800'}`}>
+              <MarkdownContent content={problem} isDarkMode={isDarkMode} />
+              {solutionCode && (
+                <div className={`mt-8 pt-6 border-t border-dashed ${isDarkMode ? 'border-zinc-800' : 'border-slate-300'}`}>
+                   <button 
+                     onClick={() => setIsSolutionModalOpen(true)}
+                     className="w-full py-3 rounded-xl border-2 border-[#FF6B00]/30 text-[#FF6B00] font-bold text-sm hover:bg-[#FF6B00]/10 transition-colors active:scale-[0.98]"
+                   >
+                     View Solution
+                   </button>
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        ) : (
+          <div className={`w-56 border-r flex flex-col flex-shrink-0 ${isDarkMode ? 'border-zinc-900 bg-[#0A0A0A]' : 'border-slate-200 bg-slate-50'}`}>
+            <div className={`h-10 border-b flex items-center px-4 text-[10px] font-mono uppercase tracking-widest font-bold ${isDarkMode ? 'border-zinc-900 text-zinc-500' : 'border-slate-200 text-slate-400'}`}>
+              <FolderTree size={14} className="mr-2" />
+              Explorer
+            </div>
+            <div className="flex-1 p-2 space-y-1">
+              <div className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                isDarkMode ? 'bg-[#FF6B00]/10 text-white border border-[#FF6B00]/20' : 'bg-orange-100 text-orange-900 border border-orange-200'
+              }`}>
+                <FileCode size={14} className="text-[#FF6B00]" />
+                <span className="text-xs font-mono">main.py</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* EDITOR + TERMINAL */}
         <div className="flex-1 flex flex-col min-w-0">
@@ -278,7 +357,8 @@ const EditorPage: React.FC<EditorPageProps> = ({ isDarkMode }) => {
 
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

@@ -105,6 +105,8 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
   const isLastSubModule = activeChapter === moduleData.chapters.length - 1 && 
     activeSubModule === moduleData.chapters[moduleData.chapters.length - 1].subModules.length - 1;
 
+  const isPractice = currentSub.id.includes('practice') || currentSub.title.toLowerCase().includes('practice');
+
   return (
     <div className={`flex h-screen font-sans overflow-hidden transition-colors duration-500 ${isDarkMode ? 'bg-[#0A0A0A] text-zinc-100' : 'bg-gray-50 text-slate-900'}`}>
 
@@ -240,13 +242,19 @@ const ModuleDetail: React.FC<ModuleDetailProps> = ({ isDarkMode }) => {
             </div>
 
             {/* Content cells */}
-            {cells.map((cell, idx) => (
-              <W3ExampleCard
-                key={`${currentSub.id}-${idx}`}
-                cell={cell}
-                isDarkMode={isDarkMode}
-              />
-            ))}
+            {cells.map((cell, idx) => {
+              const prevCell = idx > 0 ? cells[idx - 1] : null;
+              const problemMd = isPractice && prevCell && prevCell.type === 'markdown' ? prevCell.content : undefined;
+              return (
+                <W3ExampleCard
+                  key={`${currentSub.id}-${idx}`}
+                  cell={cell}
+                  isDarkMode={isDarkMode}
+                  isPractice={isPractice}
+                  problem={problemMd}
+                />
+              );
+            })}
 
             {/* Task description */}
             {currentSub.taskDescription && (
