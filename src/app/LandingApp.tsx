@@ -322,14 +322,14 @@ const Hero = ({ onNavigate, isDarkMode }: {
 
       {/* Main Hero Content - Split Layout */}
       <div 
-        className="relative z-10 w-full max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center"
+        className="relative z-10 w-full max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center flex-col"
         style={{ 
           opacity: opacity,
           transform: `translateY(${parallaxY}px) scale(${scale})`,
           filter: `blur(${blur}px)`
         }}
       >
-        <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+        <div className="flex flex-col items-center text-center">
           <div className="animate-fade-in-up inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/5 border border-orange-500/20 text-orange-400 text-[11px] font-bold uppercase tracking-[0.2em] mb-10 backdrop-blur-md shadow-[0_0_30px_rgba(249,115,22,0.15)]">
             <Sparkles size={14} className="animate-pulse" />
             <span>Advanced AI Engineering Track</span>
@@ -338,7 +338,7 @@ const Hero = ({ onNavigate, isDarkMode }: {
           <h1 className={`animate-fade-in-up animation-delay-100 text-6xl md:text-8xl font-black tracking-tight mb-8 leading-[0.95] selection:bg-orange-500 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
             Design. <br />
             Deploy. <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 drop-shadow-[0_0_30px_rgba(249,115,22,0.3)]">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 drop-shadow-[0_0_30px_rgba(249,115,22,0.3)]">
               Orchestrate.
             </span>
           </h1>
@@ -395,21 +395,38 @@ const Hero = ({ onNavigate, isDarkMode }: {
 
 const Methodology = ({ isDarkMode }: { isDarkMode: boolean }) => {
   const [ref, isVisible] = useScrollReveal(0.2);
+  const [activeIdx, setActiveIdx] = useState(0);
+
   const items = [
     {
       title: "Snippet-First Approach",
       description: "No theory-only slogs. Every lesson starts with a runnable snippet that you break and rebuild in real-time.",
+      extra: "Traditional education teaches you to memorize syntax over weeks. Our platform is built for fast-moving engineers: we immerse you immediately in production-grade code, forcing you to develop the muscle memory to navigate complex architectures, read documentation actively, and solve cognitive friction organically—exactly how senior developers operate daily.",
       icon: <Terminal size={32} />
     },
     {
       title: '"Break-the-Code" Challenges',
       description: "Our proprietary debugging engine presents you with syntactically correct but logically flawed model pipelines. Fix them to advance.",
+      extra: "We believe that debugging is the highest form of learning. Rather than holding your hand, we throw you into the deep end with partially broken architectures and guide you to the surface.",
       icon: <Zap size={32} />
     },
     {
       title: "Zero-Install Cloud Environment",
       description: "Access high-VRAM GPU clusters directly in your browser. No local setup conflicts or environment hell, ever.",
+      extra: "Say goodbye to dependency hell and version conflicts. Our WebAssembly-powered Pyodide runtime instantly provisions a clean, fully-configured data science environment within milliseconds completely locally in your browser.",
       icon: <Sparkles size={32} />
+    },
+    {
+      title: "Peer-Architected Reviews",
+      description: "Your code is reviewed by autonomous agentic systems and matched against industry-standard clean code practices.",
+      extra: "Writing code that simply 'works' is not enough. Our system analyzes your solutions for Big-O efficiency, robust error handling, and pythonic elegance to ensure you write code like a true senior engineer.",
+      icon: <Code2 size={32} />
+    },
+    {
+      title: "Algorithmic Whiteboarding",
+      description: "Develop the cognitive skills required to ace elite technical interviews through our integrated whiteboard IDE.",
+      extra: "Simulate high-pressure FAANG interview environments. We provide structured algorithmic hurdles that force you to articulate your logic, document your time-space complexities, and defend your architectural choices.",
+      icon: <Layers size={32} />
     }
   ];
 
@@ -421,7 +438,7 @@ const Methodology = ({ isDarkMode }: { isDarkMode: boolean }) => {
             Learning Framework
           </div>
           <h2 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tight mb-6">
-            The <span className="text-orange-500">Active Learning</span> Methodology
+            The <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">Active Learning</span> Methodology
           </h2>
           <p className="text-neutral-400 text-lg md:text-xl font-medium">
             Traditional tutorials fail because they don't force you to think. Our approach is designed for cognitive friction and rapid retention.
@@ -430,18 +447,63 @@ const Methodology = ({ isDarkMode }: { isDarkMode: boolean }) => {
 
         <div 
           ref={ref}
-          className={`grid grid-cols-1 md:grid-cols-3 gap-8 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+          className={`grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
         >
-          {items.map((item, idx) => (
-            <div key={idx} className="p-10 rounded-3xl bg-neutral-900/30 border border-white/5 hover:border-[#FF6B00] transition-all duration-500 group relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 blur-3xl -z-10 group-hover:bg-orange-500/10 transition-colors" />
-              <div className="w-16 h-16 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 mb-8 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
-                {item.icon}
+          {/* Left Side: Navigation Menu (Blue Boxes) */}
+          <div className="flex flex-col justify-between gap-4 h-full">
+            {items.map((item, idx) => (
+              <div 
+                key={idx} 
+                onMouseEnter={() => setActiveIdx(idx)}
+                className={`flex items-center justify-between p-5 md:p-6 rounded-2xl border transition-all duration-300 cursor-pointer group flex-1 ${
+                  activeIdx === idx 
+                    ? 'bg-neutral-900/80 border-orange-500/50 shadow-[0_0_30px_rgba(249,115,22,0.1)]' 
+                    : 'bg-neutral-900/30 border-white/5 hover:border-white/20 hover:bg-neutral-900/50'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`transform scale-75 transition-colors duration-300 ${activeIdx === idx ? 'text-orange-500' : 'text-neutral-500 group-hover:text-neutral-400'}`}>
+                    {item.icon}
+                  </div>
+                  <h3 className={`font-black text-sm md:text-base uppercase tracking-tight transition-colors duration-300 ${activeIdx === idx ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-300'}`}>
+                    {item.title}
+                  </h3>
+                </div>
+                <ArrowRight size={20} className={`transform transition-all duration-300 ${activeIdx === idx ? 'text-orange-500 translate-x-0 opacity-100' : 'text-neutral-600 -translate-x-2 opacity-0 group-hover:opacity-50 group-hover:translate-x-0'}`} />
               </div>
-              <h3 className="text-2xl font-black text-white mb-4 uppercase tracking-tight">{item.title}</h3>
-              <p className="text-neutral-400 leading-relaxed font-medium">{item.description}</p>
+            ))}
+          </div>
+
+          {/* Right Side: Dynamic Content Display (Orange Box) */}
+          <div className="relative h-full min-h-[500px]">
+            <div className="rounded-3xl bg-neutral-900/40 backdrop-blur-3xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] h-full relative overflow-hidden flex flex-col justify-center hover:border-orange-500/30 hover:shadow-[0_0_80px_rgba(249,115,22,0.1)] transition-all duration-500 group/card">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 blur-[80px] -z-10 group-hover/card:bg-orange-500/10 transition-colors duration-500" />
+              
+              {/* This inner div is what animates */}
+              <div 
+                key={activeIdx}
+                className="p-10 md:p-14 animate-fade-in-left w-full h-full flex flex-col justify-center"
+              >
+                <div className="w-20 h-20 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 mb-8">
+                  {items[activeIdx].icon}
+                </div>
+                
+                <h3 className="text-3xl md:text-4xl font-black text-white mb-6 uppercase tracking-tight leading-[1.1]">
+                  {items[activeIdx].title}
+                </h3>
+                
+                <p className="text-neutral-300 text-lg md:text-xl leading-relaxed font-medium mb-6">
+                  {items[activeIdx].description}
+                </p>
+                
+                {items[activeIdx].extra && (
+                  <div className="text-neutral-500 text-sm md:text-base leading-relaxed space-y-2 border-l-2 border-orange-500/50 pl-5 mt-2">
+                    <p>{items[activeIdx].extra}</p>
+                  </div>
+                )}
+              </div>
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </section>
@@ -470,18 +532,20 @@ const CareerEngine = ({ isDarkMode }: { isDarkMode: boolean }) => {
   return (
     <section id="career" className={`py-16 md:py-32 relative overflow-hidden border-t transition-colors duration-500 ${isDarkMode ? 'bg-neutral-950 border-white/5' : 'bg-white border-slate-200'}`}>
       <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="text-center max-w-3xl mx-auto mb-20">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-500 text-[10px] font-black uppercase tracking-[0.3em] mb-6">
+            Professional Arsenal
+          </div>
+          <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-8">
+            The <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">Career Engine</span>
+          </h2>
+          <p className="text-neutral-400 text-xl font-medium leading-relaxed">
+            We don't just teach you how to build models; we give you the tools to land the role and dominate the industry.
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
            <div className="order-2 lg:order-1">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-500 text-[10px] font-black uppercase tracking-[0.3em] mb-6">
-                Professional Arsenal
-              </div>
-              <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-8">
-                The <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-500">Career Engine</span>
-              </h2>
-              <p className="text-neutral-400 text-xl font-medium leading-relaxed mb-12">
-                We don't just teach you how to build models; we give you the tools to land the role and dominate the industry.
-              </p>
-              
               <div className="space-y-6">
                 {tools.map((tool, idx) => (
                   <div key={idx} className="flex gap-6 p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-orange-500/20 transition-all duration-300 group">
@@ -541,6 +605,21 @@ const CommunityDashboard = ({ isDarkMode }: { isDarkMode: boolean }) => {
   return (
     <section id="community" className={`py-16 md:py-32 relative border-t transition-colors duration-500 ${isDarkMode ? 'bg-black border-white/5' : 'bg-slate-50 border-slate-200'}`}>
       <div className="max-w-7xl mx-auto px-6">
+        <div 
+          ref={ref}
+          className={`text-center max-w-3xl mx-auto mb-20 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-[0.3em] mb-6">
+            Neural Ecosystem
+          </div>
+          <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-8">
+            The <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">Neuro-Network</span>
+          </h2>
+          <p className="text-neutral-400 text-xl font-medium leading-relaxed">
+            Don't learn in a vacuum. Track your progress with the Skills Matrix, compete in the Arena, and get 24/7 help in our expert Discord.
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
             <div className="relative">
               <div className="absolute -inset-10 bg-red-500/5 blur-[120px] -z-10" />
@@ -592,20 +671,7 @@ const CommunityDashboard = ({ isDarkMode }: { isDarkMode: boolean }) => {
               </div>
             </div>
 
-            <div 
-              ref={ref}
-              className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'}`}
-            >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-[0.3em] mb-6">
-                Neural Ecosystem
-              </div>
-              <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-8">
-                The <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-500">Neuro-Network</span>
-              </h2>
-              <p className="text-neutral-400 text-xl font-medium leading-relaxed mb-12">
-                Don't learn in a vacuum. Track your progress with the Skills Matrix, compete in the Arena, and get 24/7 help in our expert Discord.
-              </p>
-
+            <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'}`}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                  <div className="p-6 rounded-2xl bg-white/5 border border-white/5">
                     <div className="text-white font-black uppercase text-xs mb-2">Personalized Matrix</div>
@@ -859,12 +925,12 @@ const Curriculum = ({ isDarkMode }: { isDarkMode: boolean }) => {
       <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-red-600/5 blur-[160px] rounded-full" />
 
       <div className="max-w-5xl mx-auto px-6 relative z-10">
-        <div className="max-w-2xl mb-24">
+        <div className="max-w-3xl mx-auto text-center mb-24">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-500 text-[10px] font-black uppercase tracking-[0.3em] mb-6">
             Structural Roadmap
           </div>
           <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-8">
-            The Core <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-500">Curriculum</span>
+            The Core <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">Curriculum</span>
           </h2>
           <p className="text-neutral-400 text-lg md:text-xl font-medium leading-relaxed">
             A precise, project-driven sequence designed to transform engineering backgrounds into next-generation AI leadership.
@@ -953,7 +1019,7 @@ const Pricing = ({ isDarkMode }: { isDarkMode: boolean }) => {
             Inversion Model Pricing
           </div>
           <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-8">
-            Choose Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600">Access Tier</span>
+            Choose Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">Access Tier</span>
           </h2>
           <p className="text-neutral-400 text-lg md:text-xl font-medium leading-relaxed">
             From community observers to production architects—find the path that fits your engineering goals.
@@ -1017,9 +1083,16 @@ const LandingPage = ({ setIsDarkMode }: { setIsDarkMode: (val: boolean) => void 
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes fadeInLeft {
+          from { opacity: 0; transform: translateX(-30px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
         .animate-fade-in-up {
           animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           opacity: 0;
+        }
+        .animate-fade-in-left {
+          animation: fadeInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .animation-delay-100 { animation-delay: 100ms; }
         .animation-delay-200 { animation-delay: 200ms; }
